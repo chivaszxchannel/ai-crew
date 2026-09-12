@@ -48,6 +48,8 @@ npm -v
 
 ### วิธี A — ติดตั้งจาก GitHub (แนะนำ)
 
+repo เป็น **สาธารณะ (public)** และเป็น MIT license — ติดตั้งได้เลยโดยไม่ต้องมีบัญชี GitHub ไม่ต้องขอสิทธิ์ใคร
+
 ```
 claude plugin marketplace add chivaszxchannel/ai-crew
 claude plugin install ai-crew@bm-plugins

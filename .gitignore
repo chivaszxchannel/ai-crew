@@ -7,3 +7,5 @@ Thumbs.db
 # เอกสารภายในของผู้พัฒนา ไม่ต้องขึ้น repo สาธารณะ
 PUSH-TO-GITHUB.md
 CHANGES-*.md
+TASK-setup-both.md
+*.local.md
