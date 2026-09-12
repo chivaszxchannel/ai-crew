@@ -12,11 +12,11 @@ metadata:
 
 # /crew-image — generate a picture asset
 
-Optional capability. The crew writes code; this produces the image files a project needs (hero, banner, `og:image`, placeholder photo, texture, illustration, simple icon).
+Optional capability, **off by default**. Antigravity (`agy`) is used here and only here — it is never a code reviewer. The crew writes code; this produces the image files a project needs (hero, banner, `og:image`, placeholder photo, texture, illustration, simple icon).
 
 ## Before generating
 
-1. **Check the provider is configured.** Read `image.provider` from the merged config (see the crew skill's `references/config-schema.md`). Default `agy`. If `image.provider` is `"none"`, tell the user image generation is turned off and how to enable it (`/crew-config` → image provider), and stop.
+1. **Check the provider is configured.** Read `image.provider` from the merged config (see the crew skill's `references/config-schema.md`). **Default is `none`** — image generation is off until the user turns it on. If `image.provider` is `"none"`, tell the user image generation is turned off and how to enable it (`/crew-config` → image provider), and stop.
 2. **Decide the size from the use, not from habit.** Ask only if the user gave no clue: og:image `1200x630`, wide hero `1536x640`, square avatar/icon `512x512`, mobile banner `1080x1350`. State the size you chose in your reply.
 3. **Decide where it goes.** Default `image.out_dir` (`assets/generated/`), filename in kebab-case describing the subject (`hero-fishing-pond.png`). Never overwrite an existing file without saying so — the tool backs one up as `.bak_YYYYMMDD` automatically.
 

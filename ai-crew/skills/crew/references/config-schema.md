@@ -35,7 +35,7 @@ out.mode=mode; console.log(JSON.stringify(out,null,2));
 | `mode` | `"eco"` \| `"normal"` \| `"strict"` | Preset. See `config/modes.json`. |
 | `models.lead` | string[] | Fallback chain for lead-brain (planning, triage, report). |
 | `models.coder` / `tester` / `scout` / `writer` | string[] | Fallback chains for workers. Accepted values today: `fable`, `opus`, `sonnet`, `haiku`, `inherit`. Full model IDs may also work but are not validated. |
-| `reviewers` | string[] | Ordered reviewer chain. CLI reviewers: `codex` (Codex CLI), `gemini` (Gemini CLI), `antigravity` (Antigravity CLI `agy`). Agent reviewers: `opus` / `sonnet` / `fable` = the `reviewer-fallback` agent run on that model. The first reviewer that is available is used; on rate limit the next one is tried. |
+| `reviewers` | string[] | Ordered reviewer chain. CLI reviewers: `codex` (Codex CLI), `gemini` (Gemini CLI). **Antigravity (`agy`) is not a reviewer** — it is the image provider only. Agent reviewers: `opus` / `sonnet` / `fable` = the `reviewer-fallback` agent run on that model. The first reviewer that is available is used; on rate limit the next one is tried. |
 | `max_rounds` | int | Max review→fix cycles before stopping and reporting to the user. |
 | `double_review` | bool | When true, the round passes only if the first TWO available reviewers in the chain both return PASS. |
 | `auto_mode` | bool | Whether the UserPromptSubmit hook reminder should make the crew start without `/crew`. (The hook always fires; this flag tells the session whether to honor it.) |
@@ -47,7 +47,7 @@ out.mode=mode; console.log(JSON.stringify(out,null,2));
 | `git.add_state_dir_to_gitignore` | bool | Add `state_dir/` to `.gitignore` once. |
 | `deploy.manual` | bool | User deploys by hand → the report must list every changed file with full path and the crew must never upload. |
 | `deploy.list_changed_files` | bool | Always end the report with the changed-file list. |
-| `image.provider` | `"agy"` \| `"none"` | Which local CLI generates picture assets. `agy` = Antigravity CLI's built-in image tool. `none` disables `/crew-image` and any image subtask. |
+| `image.provider` | `"none"` (default) \| `"agy"` | Which local CLI generates picture assets. `agy` = the Antigravity CLI's built-in image tool — **Antigravity is used for images only, never for review**. `none` disables `/crew-image` and any image subtask. |
 | `image.out_dir` | path | Where generated images are written, relative to the project. Default `assets/generated`. |
 | `image.default_size` | `"<W>x<H>"` | Size used when the task does not imply one. |
 | `image.disclose` | bool | Always label generated images as AI-generated in replies and in the report. Keep this true. |
@@ -61,4 +61,4 @@ out.mode=mode; console.log(JSON.stringify(out,null,2));
 | 2 | this reviewer unavailable, try next | `REVIEWER_NOT_FOUND` / `REVIEWER_NOT_LOGGED_IN` / `REVIEWER_RATE_LIMITED` / `REVIEWER_ERROR` |
 | 3 | no CLI reviewer left in the chain | `NO_CLI_REVIEWER` → use the `reviewer-fallback` agent with the first model name in the chain |
 
-CLI reviewer notes: `codex` writes its answer with `--output-last-message`; `gemini` and `agy` print to stdout and the script captures it. `agy` is always run with stdin closed — `agy -p` silently writes nothing to a redirected stdout otherwise (antigravity-cli issue #76). Any reviewer that produces no output is treated as unavailable and the chain moves on.
+CLI reviewer notes: `codex` writes its answer with `--output-last-message`; `gemini` prints to stdout and the script captures it. Any reviewer that produces no output is treated as unavailable and the chain moves on. (`agy` appears only in `tools/gen-image.mjs`, where it is always run with stdin closed because `agy --print` silently writes nothing to a redirected stdout otherwise — antigravity-cli issue #76.)

@@ -47,10 +47,10 @@
   },
   "$comment_reviewers": "CLI reviewers: codex, gemini, antigravity (agy). Agent reviewers: opus, sonnet, fable. The chain is tried in order; the first one that runs wins.",
   "image": {
-    "provider": "agy",
+    "provider": "none",
     "out_dir": "assets/generated",
     "default_size": "1536x640",
     "disclose": true
   },
-  "$comment_image": "Optional image generation. provider: agy (Antigravity CLI) or none. Used by /crew-image and by the crew when a task needs a picture asset."
+  "$comment_image": "Optional image generation, OFF by default. Set provider to 'agy' (Antigravity CLI) after installing and signing in to agy. Antigravity is used ONLY for images, never as a code reviewer."
 }

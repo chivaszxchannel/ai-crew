@@ -46,11 +46,8 @@ if (!PROMPT || !OUT) die(3, { error: 'ต้องมี --prompt และ --ou
 if (process.env.AI_CREW_IMAGE_DEPTH) die(3, { error: 'recursion guard: gen-image ถูกเรียกซ้อนตัวเอง' });
 
 const outAbs = path.resolve(OUT);
-fs.mkdirSync(path.dirname(outAbs), { recursive: true });
-if (fs.existsSync(outAbs)) {
-  const d = new Date(); const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const bak = `${outAbs}.bak_${stamp}`; if (!fs.existsSync(bak)) fs.copyFileSync(outAbs, bak);
-}
+// NOTE: the output folder is created only AFTER the provider check below, so a missing
+// provider does not leave an empty directory behind.
 
 /** Read real pixel size from the file header. No dependencies, no guessing. */
 function imageSize(file) {
@@ -91,6 +88,14 @@ const PROVIDERS = {
 const p = PROVIDERS[PROVIDER];
 if (!p) die(3, { error: `ไม่รู้จัก provider "${PROVIDER}" · known: ${Object.keys(PROVIDERS).join(', ')}` });
 if (!which(p.bin)) die(2, { error: `ไม่พบคำสั่ง ${p.bin}`, hint: p.install });
+
+// provider is available — only now touch the filesystem
+fs.mkdirSync(path.dirname(outAbs), { recursive: true });
+if (fs.existsSync(outAbs)) {
+  const d = new Date(); const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const bak = `${outAbs}.bak_${stamp}`;
+  if (!fs.existsSync(bak)) fs.copyFileSync(outAbs, bak);
+}
 
 // ---- instructions sent to the CLI agent -------------------------------------
 const sizeLine = W && H

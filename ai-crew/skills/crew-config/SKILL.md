@@ -40,12 +40,12 @@ Load the merged config as in `${CLAUDE_PLUGIN_ROOT}/skills/crew/references/confi
 2. **Mode** — eco / normal (recommended) / strict, each with its one-line description from `config/modes.json`.
 3. **Lead model chain** — options: `fable → opus → session` (recommended) / `opus → sonnet` / `sonnet only (cheapest)` / custom (free text: comma-separated).
 4. **Worker models** — "Coding on Sonnet, reading & docs on Haiku (recommended)" / "Everything on Haiku (cheapest)" / "Coding on Opus (strongest)" / custom.
-5. **Reviewers** — multi-select: Codex CLI, Gemini CLI, Antigravity CLI (`agy`), Opus agent, Sonnet agent. Order = the order the user lists them; default `codex, gemini, opus`. If the user picks a CLI that is not installed (`Get-Command`/`command -v`), say so and offer to install it now (`npm install -g @openai/codex` / `npm install -g @google/gemini-cli`; Antigravity CLI ships with the Antigravity IDE) — never install without a yes.
+5. **Reviewers** — multi-select: Codex CLI, Gemini CLI, Opus agent, Sonnet agent. (Antigravity is not offered here — it is the image provider, asked separately.) Order = the order the user lists them; default `codex, gemini, opus`. If the user picks a CLI that is not installed (`Get-Command`/`command -v`), say so and offer to install it now (`npm install -g @openai/codex` / `npm install -g @google/gemini-cli`) — never install without a yes.
 6. **Review rounds** — 1 / 3 (recommended) / 5 / until pass (`99`).
 7. **Auto mode** — "Start the crew automatically for any code change" (recommended) / "Only for changes touching 2+ files" / "Only when I type /crew".
 8. **Reply language** — auto (recommended) / Thai / English / other (free text).
 9. **Git** — "Never commit, I do it" (recommended) / "Propose a commit and ask" / "Commit automatically after PASS".
-10. **Image generation** — "Generate picture assets when a task needs one?" → `agy` (Antigravity CLI — needs `agy` installed and signed in) / `none` (off, recommended if you only write backend code). If the user picks `agy` and it is not installed, say so and offer the same install/login help as for reviewers.
+10. **Image generation** — "Generate picture assets when a task needs one?" → `none` (default, off) / `agy` (Antigravity CLI — images only, never review). If the user picks `agy`, check `agy --version` first and say plainly if it is missing; also mention that cropping to an exact size needs `ffmpeg` or `magick`. The graphical page has the same controls in its own card.
 11. **Project rules** (project scope only) — detect the stack and propose the matching template from `${CLAUDE_PLUGIN_ROOT}/templates/rules/` (php-hostinger / nextjs-supabase / node-python-generic / generic); options: use it / use a different template / keep my existing rules file. Then ask the two fill-in questions the template needs (syntax-check command, how code reaches production) and substitute them into the `<...>` placeholders.
 
 ## 3. Write

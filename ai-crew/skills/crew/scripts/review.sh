@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # review.sh — run an independent CLI reviewer (read-only) over .crew/review-request.md and record the verdict.
-# Usage: bash review.sh <round> [reviewers=codex,gemini,antigravity] [model] [state_dir=.crew]
+# Usage: bash review.sh <round> [reviewers=codex,gemini] [model] [state_dir=.crew]
+# NOTE: Antigravity (agy) is NOT a reviewer here — it is the optional image provider (tools/gen-image.mjs).
 # Tries each CLI reviewer in order. Exit codes:
 #   0 = VERDICT: PASS   1 = VERDICT: FAIL (or no verdict line)   3 = no CLI reviewer available -> use reviewer-fallback agent
 # First line of output: REVIEWER_USED: <name> | NO_CLI_REVIEWER (with per-reviewer reasons: REVIEWER_NOT_FOUND / _NOT_LOGGED_IN / _RATE_LIMITED / _ERROR)
 set -u
 ROUND="${1:-1}"
-REVIEWERS="${2:-codex,gemini}"   # any of: codex, gemini, antigravity (agy)
+REVIEWERS="${2:-codex,gemini}"   # CLI reviewers only: codex, gemini
 MODEL="${3:-}"
 STATE_DIR="${4:-.crew}"
 TIMEOUT_SEC="${CREW_REVIEW_TIMEOUT:-900}"
@@ -35,14 +36,6 @@ run_reviewer() {   # $1 = name ; sets RES_CODE, RES_REASON, RES_FILE
       [ -n "$MODEL" ] && args+=(-m "$MODEL")
       run_with_timeout gemini "${args[@]}" </dev/null >"$log" 2>"$log.err"; local rc=$?
       [ -s "$log" ] && [ ! -f "$out" ] && cp "$log" "$out" ;;
-    antigravity|agy)
-      # Antigravity CLI. stdin MUST be closed: agy -p writes nothing to a redirected stdout
-      # unless stdin is not a TTY-waiting handle (google-antigravity/antigravity-cli issue #76).
-      command -v agy >/dev/null 2>&1 || { RES_CODE=2; RES_REASON="REVIEWER_NOT_FOUND: agy (install Antigravity CLI, then run agy once to sign in)"; return; }
-      local args=(-p "$PROMPT" --output-format text)
-      [ -n "$MODEL" ] && args+=(--model "$MODEL")
-      run_with_timeout agy "${args[@]}" </dev/null >"$log" 2>"$log.err"; local rc=$?
-      [ -s "$log" ] && [ ! -f "$out" ] && cp "$log" "$out" ;;
     *) RES_CODE=2; RES_REASON="REVIEWER_NOT_FOUND: unknown CLI reviewer '$name'"; return ;;
   esac
   local all; all="$(cat "$log" "$log.err" 2>/dev/null)"
@@ -57,7 +50,7 @@ TRIED=()
 IFS=',' read -r -a LIST <<< "$REVIEWERS"
 for r in "${LIST[@]}"; do
   r="$(echo "$r" | tr -d ' ')"
-  case "$r" in codex|gemini|antigravity|agy) ;; *) continue ;; esac     # agent reviewers are handled by the skill
+  case "$r" in codex|gemini) ;; *) continue ;; esac     # agent reviewers are handled by the skill
   RES_CODE=2; RES_REASON=""; RES_FILE=""
   run_reviewer "$r"
   TRIED+=("$r: $RES_REASON")
@@ -67,6 +60,12 @@ for r in "${LIST[@]}"; do
     exit "$RES_CODE"
   fi
 done
-echo "NO_CLI_REVIEWER: none of [$REVIEWERS] could run this round -> use the reviewer-fallback agent"
-for t in "${TRIED[@]}"; do echo "  $t"; done
+if [ "${#TRIED[@]}" -eq 0 ]; then
+  # Nothing in the list was a CLI reviewer this script knows — say so, rather than letting it
+  # read as though the reviewers were tried and found unavailable.
+  echo "NO_CLI_REVIEWER: no known CLI reviewer in [$REVIEWERS] (known: codex, gemini) -> use the reviewer-fallback agent"
+else
+  echo "NO_CLI_REVIEWER: none of [$REVIEWERS] could run this round -> use the reviewer-fallback agent"
+fi
+for t in "${TRIED[@]:-}"; do [ -n "$t" ] && echo "  $t"; done
 exit 3

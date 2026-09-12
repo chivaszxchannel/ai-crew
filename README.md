@@ -15,7 +15,7 @@ A multi-model engineering crew for Claude Code — plan, build, review, repeat.
 
 - **หัวหน้า (lead)** — Fable → Opus สลับอัตโนมัติเมื่อติดลิมิต ทำเฉพาะงานคิด: วางแผน แตกงาน ตัดสินใจ architecture คัดกรองผลตรวจ เขียนรายงาน
 - **ลูกน้อง (workers)** — Sonnet เขียนโค้ดและรันเทส, Haiku หาไฟล์/อ่านโครงสร้าง/เขียนเอกสาร
-- **ผู้ตรวจอิสระ (independent reviewer)** — **Codex / Gemini / Antigravity CLI** ซึ่งเป็นโมเดล*คนละค่าย*กับคนเขียน จึงมีจุดบอดคนละแบบ ตรวจแล้วส่งกลับมาให้หัวหน้าคัดกรอง วนแก้จนผ่าน (สูงสุด 3 รอบ)
+- **ผู้ตรวจอิสระ (independent reviewer)** — **Codex CLI / Gemini CLI** ซึ่งเป็นโมเดล*คนละค่าย*กับคนเขียน จึงมีจุดบอดคนละแบบ ตรวจแล้วส่งกลับมาให้หัวหน้าคัดกรอง วนแก้จนผ่าน (สูงสุด 3 รอบ)
 
 จบงานได้รายงานหน้าเดียว **ในภาษาที่คุณพิมพ์มา** บอกว่าแต่ละโมเดลทำอะไร ไฟล์ไหนเปลี่ยนบ้าง อะไรทดสอบแล้วจริง และอะไรที่คุณต้องไปกดดูเอง
 
@@ -28,7 +28,7 @@ flowchart TD
     S --> L["lead · Fable → Opus<br/>วางแผน แตกงาน · คัดกรองผลตรวจ"]
     L --> CO["coder · Sonnet<br/>เขียน / แก้โค้ด"]
     CO --> TE["tester · Sonnet<br/>รันเทส · พิสูจน์ด้วยหลักฐาน"]
-    TE --> RV{"ผู้ตรวจอิสระ · independent review<br/>codex → gemini → agy → opus<br/>ใช้ตัวแรกที่พร้อม"}
+    TE --> RV{"ผู้ตรวจอิสระ · independent review<br/>codex → gemini → opus<br/>ใช้ตัวแรกที่พร้อม"}
     RV -- "FAIL · ส่งกลับแก้ (สูงสุด 3 รอบ)" --> L
     RV -- "PASS" --> RP["รายงาน · report<br/>ใครทำอะไร · ไฟล์ที่เปลี่ยน<br/>ทดสอบแล้ว vs ยังไม่ได้ทดสอบ"]
     RP --> U
@@ -95,7 +95,7 @@ claude plugin install ai-crew@bm-plugins
   </picture>
 </p>
 
-หน้าเดียว 6 การ์ด เลื่อนลงทีเดียวจบ
+หน้าเดียว 7 การ์ด เลื่อนลงทีเดียวจบ
 
 | การ์ด | เลือกอะไรได้ |
 |---|---|
@@ -103,8 +103,9 @@ claude plugin install ai-crew@bm-plugins
 | **2 โหมด / Mode** | กดการ์ด `eco` `normal` `strict` แล้วช่องโมเดลด้านล่างเปลี่ยนตามทันที ปรับต่อเองได้ |
 | **3 โมเดล / Models** | dropdown 3 ช่องต่อบทบาท เรียงเป็นสายสำรอง เช่น `fable → opus → inherit` ครบทั้ง lead, coder, tester, scout, writer |
 | **4 ผู้ตรวจ / Reviewers** | ติ๊กเลือก + ลูกศรจัดลำดับ พร้อม**ป้ายสถานะสด** — พร้อมใช้ / ยังไม่ login / ยังไม่ติดตั้ง — และปุ่ม **ติดตั้ง** กับ **Login** |
+| **6 สร้างรูป / Image** | เปิด/ปิดการสร้างรูป เลือก provider (`agy`) โฟลเดอร์ปลายทาง และขนาดเริ่มต้น |
 | **5 อื่นๆ / Options** | จำนวนรอบตรวจ, ภาษาที่ตอบ, โหมดอัตโนมัติ (ทุกงาน / เฉพาะ 2 ไฟล์ขึ้นไป / ปิด), นโยบาย git |
-| **6 กติกาโปรเจกต์ / Rules** | เลือก template โดยระบบเดา stack ให้ก่อนแล้ว → เขียน `.crew/rules.md` ให้ |
+| **7 กติกาโปรเจกต์ / Rules** | เลือก template โดยระบบเดา stack ให้ก่อนแล้ว → เขียน `.crew/rules.md` ให้ |
 
 ### ปุ่ม Login ทำงานยังไง / How sign-in works
 
@@ -115,7 +116,7 @@ claude plugin install ai-crew@bm-plugins
   </picture>
 </p>
 
-กดปุ่ม **Login** แล้ว **หน้าต่าง terminal เด้งขึ้นมาจริง** พร้อมรันคำสั่ง login ของเจ้านั้นเอง (`codex login`, `gemini`, `agy`) ตัว CLI จะเปิดหน้าเว็บ login ให้ พอเสร็จแล้วกลับมากด **ตรวจสถานะอีกครั้ง** ในหน้าตั้งค่า ป้ายจะเปลี่ยนเป็นเขียว ปุ่ม **ติดตั้ง** ก็เหมือนกัน เด้งหน้าต่างรัน `npm install -g` ให้เห็นความคืบหน้า
+กดปุ่ม **Login** แล้ว **หน้าต่าง terminal เด้งขึ้นมาจริง** พร้อมรันคำสั่ง login ของเจ้านั้นเอง (`codex login`, `gemini`) ตัว CLI จะเปิดหน้าเว็บ login ให้ พอเสร็จแล้วกลับมากด **ตรวจสถานะอีกครั้ง** ในหน้าตั้งค่า ป้ายจะเปลี่ยนเป็นเขียว ปุ่ม **ติดตั้ง** ก็เหมือนกัน เด้งหน้าต่างรัน `npm install -g` ให้เห็นความคืบหน้า
 
 > **หน้านี้ไม่ขอ ไม่เห็น และไม่เก็บรหัสผ่านหรือ token ใดๆ** มันแค่เรียกคำสั่ง login ของเจ้าของ CLI ขึ้นมาให้คุณทำเอง
 > *The page never asks for, sees, or stores any password or token — it only launches the vendor's own login command for you.*
@@ -189,6 +190,10 @@ node "<plugin>/tools/config-ui.mjs" --no-open --port 8790   # ไม่เปิ
 
 บางโปรเจกต์ต้องการรูปที่ยังไม่มี — hero, banner, `og:image`, รูป placeholder ถ้าเครื่องมี **Antigravity CLI (`agy`)** ทีมสร้างให้ได้
 
+> **ปิดไว้เป็นค่าเริ่มต้น** เปิดที่ `/crew-config` (การ์ดที่ 6) หรือตั้ง `image.provider: "agy"`
+> **Antigravity ใช้สำหรับสร้างรูปเท่านั้น ไม่ใช่ผู้ตรวจ** — มันเป็นโมเดลตระกูลเดียวกับ Gemini จึงไม่ได้ให้มุมมองที่ต่างในการรีวิว แต่เป็นตัวเดียวที่มีเครื่องมือสร้างรูป
+> *Antigravity is the image provider only, never a reviewer. Off by default.*
+
 ```
 /crew-image ภาพบ่อตกปลายามเย็น มุมต่ำเหนือผิวน้ำ แสงอุ่น ไม่มีคน ไม่มีตัวหนังสือ
 ```
@@ -199,7 +204,7 @@ node "<plugin>/tools/config-ui.mjs" --no-open --port 8790   # ไม่เปิ
 
 *It measures the real pixel size from the file header instead of trusting the request, and always labels the output as AI-generated. Exit code is the verdict: 0 matched · 1 written but wrong size · 2 provider unavailable · 3 nothing produced.*
 
-เปิด/ปิดได้ที่ `image.provider` (`agy` หรือ `none`) ใน `/crew-config` · ใช้โควตาบัญชี Google เดียวกับ Gemini/Antigravity · **ไม่สร้าง**รูปคนจริง โลโก้ เครื่องหมายการค้า ตัวละครมีลิขสิทธิ์ หรืออะไรที่ทำให้เข้าใจผิดว่าเป็นภาพถ่ายจริง
+เปิด/ปิดได้ที่ `image.provider` (`none` เริ่มต้น / `agy`) ใน `/crew-config` · ใช้โควตาบัญชี Google เดียวกับ Gemini · **ไม่สร้าง**รูปคนจริง โลโก้ เครื่องหมายการค้า ตัวละครมีลิขสิทธิ์ หรืออะไรที่ทำให้เข้าใจผิดว่าเป็นภาพถ่ายจริง
 
 ---
 

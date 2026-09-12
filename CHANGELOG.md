@@ -1,10 +1,23 @@
 # Changelog
 
+## 0.4.1
+Fixes for problems found by an independent review of 0.4.0 **after** it was published. Upgrade from 0.4.0 is recommended.
+
+- **On Windows the CLI reviewer was never actually run, and the output did not say so.** `review.ps1` declared `-Reviewers` as `[string[]]`, but `powershell -File script.ps1 -Reviewers codex,gemini` passes arguments as literal strings, so the parameter bound a single element `"codex,gemini"` — which matches no reviewer, so every one was skipped. The failure line still read `none of [codex, gemini] could run this round`, because joining a one-element array reproduces the original text. Every round on Windows fell through to the agent reviewer while appearing to have tried Codex and Gemini. `-Reviewers` is now one comma-separated string that the script splits itself, matching `review.sh`; `-File` then yields both the correct list and the correct exit code (`-Command` binds the array but turns exit 3 into 1, which would have broken the fallback branch instead). Verified on PowerShell 7.4.6: PASS→0, FAIL→1, none available→3, missing request→1, reviewer order respected.
+- Both scripts now distinguish "these reviewers were tried and none could run" from "none of the configured names is a CLI reviewer at all", so a mis-typed `reviewers` list cannot masquerade as a quota problem. The `/crew` and `/crew-setup` skills are told to read the per-reviewer reason lines, not just the exit code.
+- **Saving from the settings page no longer wipes keys it does not display.** It replaced the whole file, silently dropping `double_review`, `state_dir`, `backup_suffix`, `deploy` and `image` — so turning image generation off and then pressing Save quietly turned it back on. It now merges over whatever is already in that scope's file.
+- **The settings page gained the image card it was documented as having.** 0.4.0's notes said `/crew-config` could set the image provider; that was only true of the question flow, not the page. The page now has provider, `agy` status with a Login button, output folder and default size.
+- **Antigravity is the image provider only — it is no longer offered as a reviewer.** It is the same model family as Gemini, so it added nothing as a second opinion, and it is the only CLI here with an image tool. Removed from `review.ps1`, `review.sh`, the config schema, the question flow and the settings page. Reviewers are `codex`, `gemini` and the agent reviewers.
+- **`image.provider` now defaults to `"none"`.** In 0.4.0 it defaulted to `"agy"`, so anyone installing on a machine without the Antigravity CLI hit exit 2 the first time they ran `/crew-image`. Turn it on in `/crew-config` or the settings page.
+- `gen-image.mjs` created the output folder before checking the provider, leaving an empty directory behind when the provider was missing. The filesystem is only touched after the check passes.
+- The terminal window opened by the Login and Install buttons on Windows now runs `chcp 65001` first, so Thai text is not mojibake under code page 437.
+- `plugin.json`, `marketplace.json` and `defaults.json` end with a newline.
+
 ## 0.4.0
 - **Optional image generation** — `/crew-image` creates picture assets (hero, banner, og:image, placeholder) through the Antigravity CLI's built-in image tool, and the crew can produce one itself when a plan needs an asset that does not exist.
 - The tool **measures the real pixel size from the file header** and compares it with what was requested; the provider defaults to a 1024x1024 square and honours aspect-ratio wording inconsistently. On a mismatch it crops with ffmpeg/ImageMagick when available, and otherwise **reports the size it actually got** rather than the one requested. Exit codes: 0 matched, 1 wrong size, 2 provider unavailable, 3 nothing produced.
 - Generated files are always labelled AI-generated in the reply and the report, and the prompt is recorded in the state file. Real people, logos, trademarks, copyrighted characters and anything that could pass as a genuine photograph or record are refused.
-- New config block `image` (`provider`, `out_dir`, `default_size`, `disclose`); `/crew-config` gained a question for it. Set `provider: "none"` to disable.
+- New config block `image` (`provider`, `out_dir`, `default_size`, `disclose`). Shipped with `provider: "agy"` and with Antigravity also listed as a reviewer — both changed in 0.4.1.
 
 ## 0.3.1
 - Documentation: the settings page is now documented in detail in all three guides, with real screenshots (light and dark) and a rendered flow diagram. Thai manual gains a full chapter on the visual settings page plus five new troubleshooting rows.

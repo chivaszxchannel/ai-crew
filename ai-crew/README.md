@@ -1,6 +1,6 @@
 # ai-crew — a multi-model engineering crew for Claude Code
 
-One lead model plans and splits the job. Cheaper worker models build and test. An **independent reviewer from another vendor** (Codex, Gemini or Antigravity CLI) checks the diff. The loop repeats until it passes. You get a short report, in your language, saying what each model did and which files to deploy.
+One lead model plans and splits the job. Cheaper worker models build and test. An **independent reviewer from another vendor** (Codex CLI or Gemini CLI) checks the diff. The loop repeats until it passes. You get a short report, in your language, saying what each model did and which files to deploy.
 
 Works anywhere Claude Code runs: the CLI, the VS Code / JetBrains extensions, and Claude Cowork.
 
@@ -82,7 +82,7 @@ Opens a local page in your browser — no JSON editing, nothing to install (sing
   </picture>
 </p>
 
-**Login button:** it opens a real terminal window running that vendor's own login command (`codex login`, `gemini`, `agy`). The vendor's CLI handles the browser sign-in; come back and press *Re-check status*. The page never asks for, sees, or stores a token.
+**Login button:** it opens a real terminal window running that vendor's own login command (`codex login`, `gemini`). The vendor's CLI handles the browser sign-in; come back and press *Re-check status*. The page never asks for, sees, or stores a token.
 
 **Security:** binds `127.0.0.1` only, requires a one-time random token in the URL, rejects cross-origin requests, and exits after 30 minutes idle. Existing files are backed up (`.bak_YYYYMMDD`) before being replaced. Saved settings apply to the next `/crew` run — no restart needed.
 
@@ -123,13 +123,13 @@ Each model entry is a fallback chain: on error, rate limit or "unavailable" the 
 
 **Modes:** `eco` (Sonnet lead, Haiku workers, 1 round — for small tasks or when quota is nearly gone) · `normal` (default) · `strict` (Opus coder, two reviewers must both pass, 4 rounds — for auth, payments, migrations).
 
-**Reviewers:** `codex`, `gemini` and `antigravity` (the `agy` CLI) run read-only against `.crew/review-request.md` and are parsed for a `VERDICT: PASS|FAIL` line. `opus` / `sonnet` / `fable` run the built-in `reviewer-fallback` agent. The first available one is used; the report always states which reviewer ran and why others were skipped (`not found` / `not signed in` / `rate-limited`).
+**Reviewers:** `codex` and `gemini` run read-only against `.crew/review-request.md` and are parsed for a `VERDICT: PASS|FAIL` line. Antigravity (`agy`) is **not** a reviewer — it is the optional image provider only. `opus` / `sonnet` / `fable` run the built-in `reviewer-fallback` agent. The first available one is used; the report always states which reviewer ran and why others were skipped (`not found` / `not signed in` / `rate-limited`).
 
 Full key reference: `skills/crew/references/config-schema.md`.
 
 ## Image generation (optional)
 
-Some projects need a picture that does not exist yet. With the **Antigravity CLI (`agy`)** installed, `/crew-image` produces one — and the crew can produce one itself when a plan calls for an asset.
+**Off by default** (`image.provider: "none"`). Some projects need a picture that does not exist yet. With the **Antigravity CLI (`agy`)** installed and `image.provider` set to `"agy"`, `/crew-image` produces one — and the crew can produce one itself when a plan calls for an asset.
 
 ```
 /crew-image a calm freshwater fishing pond at golden hour, low angle across the water,
@@ -140,7 +140,7 @@ What makes it different from just asking a model for a picture: the tool **measu
 
 Every generated file is labelled AI-generated in the reply and in the report's changed-files list, and the prompt is recorded in `state.md` so it can be regenerated. It will not generate real identifiable people, logos, trademarks, copyrighted characters, or anything meant to pass as a real photograph or record.
 
-Turn it on or off with `image.provider` (`agy` | `none`) in `/crew-config`. It shares the Google account quota with the Gemini/Antigravity reviewer, so heavy image use can rate-limit reviews — the crew falls back to the agent reviewer and says so.
+Turn it on with `image.provider` (`none` | `agy`) in `/crew-config` or on the settings page. **Antigravity is used for images only and never reviews code** — it is the same model family as Gemini, so it adds nothing as a second opinion, but it is the only CLI here with an image tool. It shares the Google account quota with the Gemini reviewer, so heavy image use can rate-limit reviews; the crew then falls back to the agent reviewer and says so.
 
 ## What it never does
 

@@ -47,8 +47,9 @@ const ROLES = [
 const CLI_REVIEWERS = {
   codex:       { bin: 'codex',  label: 'Codex CLI (OpenAI)',      install: 'npm install -g @openai/codex',     login: 'codex login',  status: [['login', 'status']] },
   gemini:      { bin: 'gemini', label: 'Gemini CLI (Google)',     install: 'npm install -g @google/gemini-cli', login: 'gemini',       status: [] },
-  antigravity: { bin: 'agy',    label: 'Antigravity CLI (Google)', install: null,                               login: 'agy',          status: [] },
 };
+// Antigravity (`agy`) is NOT a reviewer — it is the image provider. Checked separately below.
+const IMAGE_CLI = { agy: { bin: 'agy', label: 'Antigravity CLI (agy) — สร้างรูป / image generation', login: 'agy' } };
 const AGENT_REVIEWERS = { opus: 'Opus agent (ในตัว)', sonnet: 'Sonnet agent (ในตัว)', fable: 'Fable agent (ในตัว)' };
 
 const readJson = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } };
@@ -79,8 +80,10 @@ function run(cmd, args, timeout = 6000) {
   });
 }
 
-async function cliStatus(key) {
-  const c = CLI_REVIEWERS[key];
+async function cliStatus(key, table = CLI_REVIEWERS) {
+  const c = table[key];
+  if (!c) return { installed: false, login: 'missing', detail: 'unknown cli' };
+  c.status = c.status || [];
   const v = await run(c.bin, ['--version']);
   if (!v.ok) return { installed: false, login: 'missing', detail: 'ยังไม่ได้ติดตั้ง / not installed' };
   const version = (v.out.trim().split('\n')[0] || '').slice(0, 60);
@@ -102,7 +105,7 @@ function openTerminal(cmdline, title) {
   try {
     if (process.platform === 'win32') {
       const bat = path.join(dir, 'run.bat');
-      fs.writeFileSync(bat, `@echo off\r\ntitle ${title}\r\necho ${title}\r\necho.\r\n${cmdline}\r\necho.\r\necho ---\r\necho เสร็จแล้วปิดหน้าต่างนี้ แล้วกด "ตรวจสถานะอีกครั้ง" ในหน้าเว็บ\r\npause\r\n`);
+      fs.writeFileSync(bat, `@echo off\r\nchcp 65001 >nul\r\ntitle ${title}\r\necho ${title}\r\necho.\r\n${cmdline}\r\necho.\r\necho ---\r\necho เสร็จแล้วปิดหน้าต่างนี้ แล้วกด "ตรวจสถานะอีกครั้ง" ในหน้าเว็บ\r\npause\r\n`);
       spawn('cmd', ['/c', 'start', '""', bat], { detached: true, stdio: 'ignore', windowsHide: false }).unref();
       return { ok: true, how: 'เปิดหน้าต่าง Command Prompt ให้แล้ว' };
     }
@@ -180,9 +183,10 @@ const server = http.createServer(async (req, res) => {
     const { merged, modes, hasUser, hasProject } = mergedConfig();
     const cli = {};
     for (const k of Object.keys(CLI_REVIEWERS)) cli[k] = { ...(await cliStatus(k)), label: CLI_REVIEWERS[k].label, canInstall: !!CLI_REVIEWERS[k].install };
+    const imageCli = {}; for (const k of Object.keys(IMAGE_CLI)) imageCli[k] = { ...(await cliStatus(k, IMAGE_CLI)), label: IMAGE_CLI[k].label, canInstall: false };
     return json(res, 200, {
       merged, modes: Object.fromEntries(Object.entries(modes).filter(([k]) => !k.startsWith('$'))),
-      cli, agents: AGENT_REVIEWERS, models: MODELS, roles: ROLES,
+      cli, imageCli, agents: AGENT_REVIEWERS, models: MODELS, roles: ROLES,
       templates: ruleTemplates(), detected: detectStack(),
       project: PROJECT, home: HOME, hasUser, hasProject,
       rulesExists: fs.existsSync(path.join(PROJECT, '.crew/rules.md')),
@@ -195,7 +199,7 @@ const server = http.createServer(async (req, res) => {
     let data = {}; try { data = JSON.parse(body || '{}'); } catch {}
 
     if (url.pathname === '/api/login') {
-      const c = CLI_REVIEWERS[data.cli]; if (!c) return json(res, 400, { error: 'unknown cli' });
+      const c = CLI_REVIEWERS[data.cli] || IMAGE_CLI[data.cli]; if (!c) return json(res, 400, { error: 'unknown cli' });
       return json(res, 200, openTerminal(c.login, `ai-crew — login ${data.cli}`));
     }
     if (url.pathname === '/api/install') {
@@ -207,7 +211,14 @@ const server = http.createServer(async (req, res) => {
         const cfg = data.config || {};
         const scope = data.scope === 'global' ? 'global' : 'project';
         const target = scope === 'global' ? path.join(HOME, '.claude/ai-crew.json') : path.join(PROJECT, '.crew/config.json');
-        backupThenWrite(target, JSON.stringify(cfg, null, 2) + '\n');
+        // Merge over whatever is already in THIS file. The page only knows some keys; replacing the
+        // whole file silently wiped the rest (double_review, state_dir, backup_suffix, deploy, image...).
+        const existing = readJson(target) || {};
+        const out = { ...existing, ...cfg };
+        for (const k of ['models', 'git', 'deploy', 'image'])
+          if (cfg[k] && typeof cfg[k] === 'object' && !Array.isArray(cfg[k]))
+            out[k] = { ...(existing[k] || {}), ...cfg[k] };
+        backupThenWrite(target, JSON.stringify(out, null, 2) + '\n');
         const written = [target];
         if (data.rulesTemplate) {
           const src = path.join(PLUGIN_ROOT, 'templates/rules', data.rulesTemplate + '.md');
@@ -321,6 +332,20 @@ function render(){
   const revs=cfg.reviewers.filter(k=>S.cli[k]||S.agents[k]);
   const all=[...Object.keys(S.cli).map(k=>[k,S.cli[k].label,'cli']),...Object.entries(S.agents).map(([k,l])=>[k,l,'agent'])];
   const revRows=all.map(([k,l,t])=>revRow(k,l,t,revs.indexOf(k),revs.length)).join('');
+  const img=cfg.image||{};
+  const ic=(S.imageCli&&S.imageCli.agy)||{installed:false,login:'missing'};
+  const icBadge = !ic.installed ? '<span class="badge bad">ยังไม่ติดตั้ง agy</span>'
+    : ic.login==='in' ? '<span class="badge ok">พร้อมใช้</span>'
+    : '<span class="badge warn">ติดตั้งแล้ว · สถานะ login ไม่ทราบ</span>';
+  const imgRows =
+    '<div class="row"><div class="lbl">ตัวสร้างรูป / Provider<small>agy = Antigravity CLI (ใช้เฉพาะสร้างรูป ไม่ใช่ผู้ตรวจ)</small></div>'
+    +'<select id="imgprov"><option value="none"'+((img.provider||'none')==='none'?' selected':'')+'>ปิด — ไม่สร้างรูป</option>'
+    +'<option value="agy"'+(img.provider==='agy'?' selected':'')+'>agy (Antigravity CLI)</option></select></div>'
+    +'<div class="row"><div class="lbl">สถานะ agy<small>ต้องติดตั้งและ sign in ก่อนใช้</small></div>'+icBadge
+    +'<span style="flex:1"></span>'+(ic.installed?'<button class="ghost" onclick="doLogin(\'agy\')">Login</button>':'')+'</div>'
+    +'<div class="row"><div class="lbl">โฟลเดอร์ปลายทาง<small>out_dir</small></div><input id="imgdir" type="text" style="min-width:220px" value="'+(img.out_dir||'assets/generated')+'"></div>'
+    +'<div class="row"><div class="lbl">ขนาดเริ่มต้น<small>default_size เช่น 1536x640</small></div><input id="imgsize" type="text" style="min-width:140px" value="'+(img.default_size||'1536x640')+'"></div>';
+
   const tplOpts=S.templates.map(t=>'<option value="'+t+'"'+((tpl||S.detected)===t?' selected':'')+'>'+t+(t===S.detected?' (ตรวจเจอในโปรเจกต์นี้)':'')+'</option>').join('');
 
   document.getElementById('app').innerHTML=
@@ -349,7 +374,11 @@ function render(){
   +'<div class="row"><div class="lbl">Git<small>ทีมจะ commit ให้หรือไม่</small></div><select id="git">'
   +[['never','ไม่ commit เลย ฉันทำเอง'],['ask','เสนอข้อความแล้วถามก่อน'],['auto','commit เองหลังตรวจผ่าน']].map(([v,l])=>'<option value="'+v+'"'+(((cfg.git&&cfg.git.commit)||'never')===v?' selected':'')+'>'+l+'</option>').join('')+'</select></div></div>'
 
-  +'<div class="card"><h2>6. กติกาของโปรเจกต์ / Project rules</h2>'
+  +'<div class="card"><h2>6. สร้างรูปประกอบ / Image generation</h2>'
+  +'<div class="sub" style="margin:-4px 0 8px">ตัวเลือกเสริม ใช้ตอนงานต้องการรูปที่ยังไม่มี (hero, og:image, placeholder) · ผู้ตรวจไม่เกี่ยวกับส่วนนี้</div>'
+  +imgRows+'</div>'
+
+  +'<div class="card"><h2>7. กติกาของโปรเจกต์ / Project rules</h2>'
   +'<div class="sub" style="margin:-4px 0 8px">ไฟล์ <code>.crew/rules.md</code> คือสิ่งที่ทำให้ทีมรู้จักโปรเจกต์นี้ (คำสั่งตรวจ syntax, วิธี deploy, ไฟล์ห้ามแตะ)'
   +(S.rulesExists?' — <b>มีไฟล์อยู่แล้ว</b> จะไม่เขียนทับถ้าไม่ติ๊ก':'')+'</div>'
   +'<div class="row"><div class="lbl">เลือก template</div><select id="tpl"><option value="">— ไม่ต้องสร้าง —</option>'+tplOpts+'</select></div>'
@@ -385,6 +414,9 @@ async function save(){
   const a=document.getElementById('auto').value;
   out.auto_mode=a!=='0'; if(a==='2') out.auto_mode_min_files=2; else if(a==='1') out.auto_mode_min_files=1;
   out.git={commit:document.getElementById('git').value};
+  const ip=document.getElementById('imgprov');
+  if(ip) out.image={provider:ip.value,out_dir:document.getElementById('imgdir').value.trim()||'assets/generated',
+                    default_size:document.getElementById('imgsize').value.trim()||'1536x640'};
   if(scope==='project') out.rules_file='.crew/rules.md';
   const owEl=document.getElementById('ow');
   const r=await api('/api/save',{config:out,scope,rulesTemplate:document.getElementById('tpl').value||null,overwriteRules:owEl?owEl.checked:false});
