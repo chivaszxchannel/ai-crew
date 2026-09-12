@@ -1,6 +1,6 @@
 {
   "name": "ai-crew",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Multi-model engineering crew for Claude Code: a lead model plans and splits the work, cheaper worker models build and test, an independent CLI reviewer (Codex / Gemini / Antigravity) checks it, the loop repeats until it passes, and you get a short per-model report in your language. Optional AI image generation for picture assets. Configurable models, modes (eco/normal/strict), reviewer chain and per-project rules.",
   "author": {
     "name": "BM"

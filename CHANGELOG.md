@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.3
+- **Thai descriptions on the mode cards.** The eco / normal / strict cards in the settings page now show a Thai explanation as the main line with the English one beneath it, matching the role rows. Each mode carries a `description_th` field in `config/modes.json`; it is display-only and never written into a saved config.
+
 ## 0.4.2
 Three things an independent review of 0.4.1 found. The first is the same class of silent failure as the Windows bug 0.4.1 fixed, on a different axis.
 

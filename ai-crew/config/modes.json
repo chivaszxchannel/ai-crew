@@ -1,6 +1,7 @@
 {
   "$comment": "Presets. A mode overrides the keys it lists; everything else comes from defaults/user/project config. Select with mode in config or /crew --eco | --normal | --strict",
   "eco": {
+    "description_th": "ประหยัดสุด หัวหน้าคิดด้วย Sonnet ลูกน้องใช้ Haiku ตรวจ 1 รอบ ใช้ตอนโควตาใกล้หมดหรืองานเล็ก",
     "description": "Cheapest. Lead thinks on Sonnet, workers on Haiku, one review round. Use when quota is nearly gone or the task is small.",
     "models": {
       "lead":   ["sonnet", "opus", "inherit"],
@@ -13,6 +14,7 @@
     "double_review": false
   },
   "normal": {
+    "description_th": "ค่าเริ่มต้นที่สมดุล หัวหน้าใช้โมเดลแรงสุด เขียนโค้ดด้วย Sonnet อ่าน/เขียนเอกสารด้วย Haiku ตรวจไม่เกิน 3 รอบ",
     "description": "Balanced default. Lead on the strongest model, coding on Sonnet, reading/writing on Haiku, up to 3 review rounds.",
     "models": {
       "lead":   ["fable", "opus", "inherit"],
@@ -25,6 +27,7 @@
     "double_review": false
   },
   "strict": {
+    "description_th": "มั่นใจสูงสุด ใช้โมเดลแรงสุดทุกจุดที่สำคัญ ผู้ตรวจอิสระ 2 ค่ายต้องผ่านทั้งคู่ ไม่เกิน 4 รอบ ใช้กับงาน auth การเงิน การย้ายข้อมูล",
     "description": "Highest assurance. Strongest models everywhere that matters, two independent reviewers must both pass, up to 4 rounds. Use for auth, payments, data migrations.",
     "models": {
       "lead":   ["fable", "opus", "inherit"],

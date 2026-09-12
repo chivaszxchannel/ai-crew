@@ -270,7 +270,7 @@ button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line
 button:disabled{opacity:.45;cursor:not-allowed}
 .modes{display:flex;gap:10px;flex-wrap:wrap}
 .mode{flex:1 1 200px;border:2px solid var(--line);border-radius:var(--radius);padding:12px;cursor:pointer;background:transparent;color:var(--ink);text-align:left;display:block}
-.mode.on{border-color:var(--accent)}.mode b{display:block;margin-bottom:3px}.mode span{color:var(--muted);font-size:12.5px;line-height:1.45}
+.mode.on{border-color:var(--accent)}.mode b{display:block;margin-bottom:3px}.mode span{display:block;color:var(--ink);font-size:12.5px;line-height:1.45}.mode small{display:block;margin-top:4px;color:var(--muted);font-size:11.5px;line-height:1.4}
 .badge{font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);white-space:nowrap}
 .badge.ok{color:var(--ok);border-color:var(--ok)}.badge.warn{color:var(--warn);border-color:var(--warn)}.badge.bad{color:var(--bad);border-color:var(--bad)}
 .chain{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.arrow{color:var(--muted);font-size:13px}
@@ -326,7 +326,9 @@ function revRow(key,label,type,idx,total){
 function render(){
   document.getElementById('where').innerHTML='โปรเจกต์: <code>'+S.project+'</code>';
   const modeCards=Object.entries(S.modes).map(([k,v])=>
-    '<button class="mode'+(cfg.mode===k?' on':'')+'" onclick="setMode(\''+k+'\')"><b>'+k+'</b><span>'+(v.description||'')+'</span></button>').join('');
+    '<button class="mode'+(cfg.mode===k?' on':'')+'" onclick="setMode(\''+k+'\')"><b>'+k+'</b>'
+    +(v.description_th?'<span>'+v.description_th+'</span>':'')
+    +(v.description?'<small>'+v.description+'</small>':'')+'</button>').join('');
   const roleRows=S.roles.map(([r,th,en])=>
     '<div class="row"><div class="lbl">'+th+'<small>'+en+'</small></div><div class="chain">'+chainSel(r)+'</div></div>').join('');
   const revs=cfg.reviewers.filter(k=>S.cli[k]||S.agents[k]);
