@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0
+- **Optional image generation** — `/crew-image` creates picture assets (hero, banner, og:image, placeholder) through the Antigravity CLI's built-in image tool, and the crew can produce one itself when a plan needs an asset that does not exist.
+- The tool **measures the real pixel size from the file header** and compares it with what was requested; the provider defaults to a 1024x1024 square and honours aspect-ratio wording inconsistently. On a mismatch it crops with ffmpeg/ImageMagick when available, and otherwise **reports the size it actually got** rather than the one requested. Exit codes: 0 matched, 1 wrong size, 2 provider unavailable, 3 nothing produced.
+- Generated files are always labelled AI-generated in the reply and the report, and the prompt is recorded in the state file. Real people, logos, trademarks, copyrighted characters and anything that could pass as a genuine photograph or record are refused.
+- New config block `image` (`provider`, `out_dir`, `default_size`, `disclose`); `/crew-config` gained a question for it. Set `provider: "none"` to disable.
+
+## 0.3.1
+- Documentation: the settings page is now documented in detail in all three guides, with real screenshots (light and dark) and a rendered flow diagram. Thai manual gains a full chapter on the visual settings page plus five new troubleshooting rows.
+
+## 0.3.0
+- **Graphical settings page** — `/crew-config ui` (or `node tools/config-ui.mjs`) opens a local page in your browser: dropdowns for every role's model chain, mode presets, reviewer list with live installed/signed-in status, rounds, language, auto-mode, git policy and the project rules template. Saving writes the same files the wizard writes and backs up anything it replaces.
+- **One-click install and sign-in** — the reviewer rows have buttons that open a real terminal window running `npm install -g ...` or the vendor's own `login` command. The page never asks for, sees, or stores a token.
+- No npm dependencies; single file, Node 18+. The server binds 127.0.0.1, requires a one-time token in the URL, rejects cross-origin requests, and exits after 30 minutes idle.
+- **Leak guard for maintainers** — `.githooks/pre-commit` blocks committing crew state, backups, key material and any string listed in a local (gitignored) `.secrets-patterns`; `.githooks/audit-leak` scans every tracked file and the whole history.
+
 ## 0.2.1
 - Antigravity CLI (`agy`) can be used as a reviewer alongside Codex and Gemini. It is always run with stdin closed, because `agy -p` writes nothing to a redirected stdout otherwise (antigravity-cli issue #76).
 

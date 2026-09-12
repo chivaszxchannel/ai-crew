@@ -14,7 +14,21 @@ metadata:
 
 Runs as a short guided wizard. Use `AskUserQuestion` for every choice (it renders as clickable options in Claude Code, the VS Code extension, and Cowork). Speak the user's language (`language` in config, or the language they typed in).
 
-Arguments: `/crew-config` (project), `/crew-config --global` (write `~/.claude/ai-crew.json` instead), `/crew-config show` (print the merged config and stop), `/crew-config rules` (only regenerate the rules file).
+Arguments: `/crew-config` (project), `/crew-config ui` (open the graphical settings page — see below), `/crew-config --global` (write `~/.claude/ai-crew.json` instead), `/crew-config show` (print the merged config and stop), `/crew-config rules` (only regenerate the rules file).
+
+## Graphical settings page (`/crew-config ui`)
+
+When the user asks for the UI, a window, a dropdown, or says the wizard is slow, launch the bundled page instead of asking questions here:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/tools/config-ui.mjs" --project "<the project directory>"
+```
+
+It prints a `http://127.0.0.1:<port>/?t=<token>` link and opens the browser itself. Tell the user in one line that the page is open and that **the command keeps running until they press "ปิดโปรแกรม" on the page or Ctrl+C** — do not wait for it to exit before replying. If Node is missing, say so and fall back to the question flow below.
+
+What the page does: dropdowns for every role's model chain, mode presets, reviewer list with live installed/login status and **buttons that open a real terminal window** to install or sign in (the vendor CLI handles the browser sign-in; the page never sees a token), rounds, language, auto-mode, git policy, and the project rules template. Saving writes the same files this skill writes, backs up any existing file first, and adds `.crew/` to `.gitignore`.
+
+Security notes to repeat if the user asks: it binds `127.0.0.1` only, requires the one-time token in the URL, rejects cross-origin requests, and exits after 30 minutes idle.
 
 ## 1. Show current state (no questions yet)
 
@@ -31,7 +45,8 @@ Load the merged config as in `${CLAUDE_PLUGIN_ROOT}/skills/crew/references/confi
 7. **Auto mode** — "Start the crew automatically for any code change" (recommended) / "Only for changes touching 2+ files" / "Only when I type /crew".
 8. **Reply language** — auto (recommended) / Thai / English / other (free text).
 9. **Git** — "Never commit, I do it" (recommended) / "Propose a commit and ask" / "Commit automatically after PASS".
-10. **Project rules** (project scope only) — detect the stack and propose the matching template from `${CLAUDE_PLUGIN_ROOT}/templates/rules/` (php-hostinger / nextjs-supabase / node-python-generic / generic); options: use it / use a different template / keep my existing rules file. Then ask the two fill-in questions the template needs (syntax-check command, how code reaches production) and substitute them into the `<...>` placeholders.
+10. **Image generation** — "Generate picture assets when a task needs one?" → `agy` (Antigravity CLI — needs `agy` installed and signed in) / `none` (off, recommended if you only write backend code). If the user picks `agy` and it is not installed, say so and offer the same install/login help as for reviewers.
+11. **Project rules** (project scope only) — detect the stack and propose the matching template from `${CLAUDE_PLUGIN_ROOT}/templates/rules/` (php-hostinger / nextjs-supabase / node-python-generic / generic); options: use it / use a different template / keep my existing rules file. Then ask the two fill-in questions the template needs (syntax-check command, how code reaches production) and substitute them into the `<...>` placeholders.
 
 ## 3. Write
 
@@ -44,4 +59,4 @@ Load the merged config as in `${CLAUDE_PLUGIN_ROOT}/skills/crew/references/confi
 
 - Never guess a value the user did not choose; defaults come from `config/defaults.json`.
 - Never install CLIs or change global files without an explicit yes.
-- Keep the wizard under 10 questions; skip anything already answered.
+- Keep the wizard under 12 questions; skip anything already answered.

@@ -82,6 +82,9 @@ Input: request verbatim + scout report + rules file. Output: 3–8 subtasks (fil
 - Worker fails (error, limit, output misses the criterion) → retry with the next model in its chain; if the chain is exhausted, the chair does it and notes "done by chair" in state.
 - After all subtasks: worker-tester runs the stack's syntax/type/test commands from `rules_file`, compares brace/paren/CRLF/BOM with backups, greps callers of changed signatures, and returns PASS/FAIL with raw output.
 
+#### Image assets (optional)
+If a subtask needs a picture that does not exist (hero, banner, `og:image`, placeholder, texture) and `image.provider` is not `none`, follow the `ai-crew:crew-image` skill. The generated file is a deliverable: it goes in the changed-files list with its **measured** size and an AI-generated label, and the prompt used is recorded in `state.md`. If the tool exits 1 (size mismatch it could not fix) or 2 (provider unavailable), that subtask is not `done` — report it as open. Generating an image never replaces or skips the review round for the code around it.
+
 ### 5. Independent review (up to `max_rounds`)
 1. worker-writer builds `state_dir/review-request.md` from `references/review-prompt.md`: request verbatim, changed files, real diff (`git diff -- <files>` or `diff -u <backup> <file>`), risk areas. The "Output format" block is copied byte-for-byte.
 2. Run the reviewer chain script, passing the CLI reviewers from config in order:

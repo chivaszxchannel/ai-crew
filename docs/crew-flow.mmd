@@ -1,0 +1,10 @@
+flowchart TD
+    U(["คุณ / you<br/>บอกงานที่ต้องแก้โค้ด"]) --> C["ประธาน · the chair<br/>โมเดลของ session"]
+    C --> S["scout · Haiku<br/>หาไฟล์ อ่าน pattern"]
+    S --> L["lead · Fable → Opus<br/>วางแผน แตกงาน · คัดกรองผลตรวจ"]
+    L --> CO["coder · Sonnet<br/>เขียน / แก้โค้ด"]
+    CO --> TE["tester · Sonnet<br/>รันเทส · พิสูจน์ด้วยหลักฐาน"]
+    TE --> RV{"ผู้ตรวจอิสระ · independent review<br/>codex → gemini → agy → opus<br/>ใช้ตัวแรกที่พร้อม"}
+    RV -- "FAIL · ส่งกลับแก้ (สูงสุด 3 รอบ)" --> L
+    RV -- "PASS" --> RP["รายงาน · report<br/>ใครทำอะไร · ไฟล์ที่เปลี่ยน<br/>ทดสอบแล้ว vs ยังไม่ได้ทดสอบ"]
+    RP --> U

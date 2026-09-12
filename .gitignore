@@ -3,12 +3,11 @@ node_modules/
 *.bak_*
 .DS_Store
 Thumbs.db
-
-# เอกสารภายในของผู้พัฒนา ไม่ต้องขึ้น repo สาธารณะ
-PUSH-TO-GITHUB.md
-CHANGES-*.md
-TASK-setup-both.md
-*.local.md
 .secrets-patterns
 .secrets-allow
 TASK-*.md
+*.local.md
+PUSH-TO-GITHUB.md
+CHANGES-*.md
+_imgtest/
+assets/generated/*.bak_*

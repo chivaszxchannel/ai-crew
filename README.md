@@ -21,20 +21,20 @@ A multi-model engineering crew for Claude Code — plan, build, review, repeat.
 
 > In short: a **lead model** plans and splits the work, **cheaper worker models** build and test, and an **independent reviewer from another vendor** checks the diff. The loop repeats until it passes, then you get a one-screen report in your own language.
 
+```mermaid
+flowchart TD
+    U(["คุณ / you<br/>บอกงานที่ต้องแก้โค้ด"]) --> C["ประธาน · the chair<br/>โมเดลของ session"]
+    C --> S["scout · Haiku<br/>หาไฟล์ อ่าน pattern"]
+    S --> L["lead · Fable → Opus<br/>วางแผน แตกงาน · คัดกรองผลตรวจ"]
+    L --> CO["coder · Sonnet<br/>เขียน / แก้โค้ด"]
+    CO --> TE["tester · Sonnet<br/>รันเทส · พิสูจน์ด้วยหลักฐาน"]
+    TE --> RV{"ผู้ตรวจอิสระ · independent review<br/>codex → gemini → agy → opus<br/>ใช้ตัวแรกที่พร้อม"}
+    RV -- "FAIL · ส่งกลับแก้ (สูงสุด 3 รอบ)" --> L
+    RV -- "PASS" --> RP["รายงาน · report<br/>ใครทำอะไร · ไฟล์ที่เปลี่ยน<br/>ทดสอบแล้ว vs ยังไม่ได้ทดสอบ"]
+    RP --> U
 ```
-คุณ ─► ประธาน (โมเดลของ session / the chair)
-         │
-         ├─► scout   (Haiku)         หาไฟล์ อ่าน pattern · explore
-         ├─► lead    (Fable → Opus)  วางแผน แตกงาน · plan & split
-         ├─► coder   (Sonnet)        เขียน / แก้โค้ด · build
-         ├─► tester  (Sonnet)        รันเทส พิสูจน์ · verify
-         │
-         └─► ผู้ตรวจอิสระ / independent review
-                codex → gemini → agy → opus   (ใช้ตัวแรกที่พร้อม)
-                     │
-                     ├─ FAIL → หัวหน้าคัดกรอง → แก้ → วนรอบใหม่ (สูงสุด 3)
-                     └─ PASS → รายงาน / report
-```
+
+<sub>ถ้าแผนภาพไม่ขึ้น ดูภาพนิ่งที่ <a href="docs/crew-flow.png">docs/crew-flow.png</a></sub>
 
 ---
 
@@ -75,6 +75,63 @@ claude plugin install ai-crew@bm-plugins
 > *No Codex or Gemini? It falls back to an Opus reviewer automatically and says so in the report.*
 
 รองรับ Claude Code CLI, extension ใน VS Code / JetBrains, Claude Cowork และ IDE ที่ fork จาก VS Code เช่น Antigravity
+
+---
+
+## ตั้งค่าด้วยหน้าเว็บ / Visual settings page
+
+ไม่ต้องแก้ JSON เอง พิมพ์ `/crew-config ui` แล้วหน้าตั้งค่าจะเปิดในเบราว์เซอร์ทันที
+
+*No JSON editing. Type `/crew-config ui` and a settings page opens in your browser.*
+
+```
+/crew-config ui
+```
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/config-ui-dark.png">
+    <img alt="หน้าตั้งค่า ai-crew — เลือกโมเดลจาก dropdown, โหมด, ผู้ตรวจ, กติกาโปรเจกต์" src="docs/config-ui-light.png" width="780">
+  </picture>
+</p>
+
+หน้าเดียว 6 การ์ด เลื่อนลงทีเดียวจบ
+
+| การ์ด | เลือกอะไรได้ |
+|---|---|
+| **1 ขอบเขต / Scope** | บันทึกลงโปรเจกต์นี้ (`.crew/config.json`) หรือเป็นค่าเริ่มต้นของทุกโปรเจกต์ (`~/.claude/ai-crew.json`) |
+| **2 โหมด / Mode** | กดการ์ด `eco` `normal` `strict` แล้วช่องโมเดลด้านล่างเปลี่ยนตามทันที ปรับต่อเองได้ |
+| **3 โมเดล / Models** | dropdown 3 ช่องต่อบทบาท เรียงเป็นสายสำรอง เช่น `fable → opus → inherit` ครบทั้ง lead, coder, tester, scout, writer |
+| **4 ผู้ตรวจ / Reviewers** | ติ๊กเลือก + ลูกศรจัดลำดับ พร้อม**ป้ายสถานะสด** — พร้อมใช้ / ยังไม่ login / ยังไม่ติดตั้ง — และปุ่ม **ติดตั้ง** กับ **Login** |
+| **5 อื่นๆ / Options** | จำนวนรอบตรวจ, ภาษาที่ตอบ, โหมดอัตโนมัติ (ทุกงาน / เฉพาะ 2 ไฟล์ขึ้นไป / ปิด), นโยบาย git |
+| **6 กติกาโปรเจกต์ / Rules** | เลือก template โดยระบบเดา stack ให้ก่อนแล้ว → เขียน `.crew/rules.md` ให้ |
+
+### ปุ่ม Login ทำงานยังไง / How sign-in works
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/reviewers-dark.png">
+    <img alt="การ์ดผู้ตรวจ แสดงป้ายสถานะ พร้อมใช้ / ยังไม่ login / ยังไม่ติดตั้ง พร้อมปุ่ม Login" src="docs/reviewers-light.png" width="780">
+  </picture>
+</p>
+
+กดปุ่ม **Login** แล้ว **หน้าต่าง terminal เด้งขึ้นมาจริง** พร้อมรันคำสั่ง login ของเจ้านั้นเอง (`codex login`, `gemini`, `agy`) ตัว CLI จะเปิดหน้าเว็บ login ให้ พอเสร็จแล้วกลับมากด **ตรวจสถานะอีกครั้ง** ในหน้าตั้งค่า ป้ายจะเปลี่ยนเป็นเขียว ปุ่ม **ติดตั้ง** ก็เหมือนกัน เด้งหน้าต่างรัน `npm install -g` ให้เห็นความคืบหน้า
+
+> **หน้านี้ไม่ขอ ไม่เห็น และไม่เก็บรหัสผ่านหรือ token ใดๆ** มันแค่เรียกคำสั่ง login ของเจ้าของ CLI ขึ้นมาให้คุณทำเอง
+> *The page never asks for, sees, or stores any password or token — it only launches the vendor's own login command for you.*
+
+### ความปลอดภัย / Security
+
+เป็น local server ที่สั่งติดตั้งโปรแกรมได้ จึงกันไว้ 4 ชั้น: ผูกกับ `127.0.0.1` เท่านั้น เครื่องอื่นในวงแลนเข้าไม่ได้ · ต้องมี token สุ่มในลิงก์ เว็บอื่นที่เปิดอยู่ยิงคำสั่งมาไม่ได้ · ปฏิเสธ request ข้าม origin · ปิดตัวเองอัตโนมัติหลังไม่ใช้งาน 30 นาที
+
+ไม่ต้องติดตั้งอะไรเพิ่ม ไม่มี npm dependency เป็นไฟล์ Node ไฟล์เดียว (`ai-crew/tools/config-ui.mjs`) เปิดตรงๆ ก็ได้
+
+```bash
+node "<plugin>/tools/config-ui.mjs" --project .        # เปิดเบราว์เซอร์ให้เอง
+node "<plugin>/tools/config-ui.mjs" --no-open --port 8790   # ไม่เปิดเอง ใช้ลิงก์ที่พิมพ์ออกมา
+```
+
+บันทึกแล้วมีผลกับ `/crew` ครั้งถัดไปทันที **ไม่ต้องรีสตาร์ท Claude Code** และถ้าไฟล์เดิมมีอยู่ จะ backup เป็น `.bak_YYYYMMDD` ให้ก่อนเสมอ
 
 ---
 
@@ -125,6 +182,24 @@ claude plugin install ai-crew@bm-plugins
 ค่าโมเดลเป็น **รายการสำรอง (fallback chain)** — ลองตัวแรกก่อน ถ้าติดลิมิต/ล่ม ข้ามไปตัวถัดไปเอง และจดไว้ในรายงานว่าสลับตอนไหนเพราะอะไร `inherit` = โมเดลของ session ปัจจุบัน
 
 **กติกาต่อโปรเจกต์ (`.crew/rules.md`)** — ปลั๊กอินเดา stack จากไฟล์ในโปรเจกต์แล้วก็อป template มาให้: PHP บน shared hosting · Next.js + Supabase · Node/Python · generic แก้เองได้ตลอด ทีมจะอ่านทุกครั้งและส่งท่อนกติกาให้ลูกน้องทุกตัว
+
+---
+
+## สร้างรูปประกอบ (ตัวเลือกเสริม) / Image generation (optional)
+
+บางโปรเจกต์ต้องการรูปที่ยังไม่มี — hero, banner, `og:image`, รูป placeholder ถ้าเครื่องมี **Antigravity CLI (`agy`)** ทีมสร้างให้ได้
+
+```
+/crew-image ภาพบ่อตกปลายามเย็น มุมต่ำเหนือผิวน้ำ แสงอุ่น ไม่มีคน ไม่มีตัวหนังสือ
+```
+
+หรือปล่อยให้ทีมสร้างเองเมื่อแผนงานต้องใช้รูป (เช่นสร้างหน้า landing แล้วยังไม่มี hero)
+
+**สิ่งที่ทำให้ต่างจากการสั่งเจนภาพเฉยๆ** คือมัน **วัดขนาดจริงจาก header ของไฟล์** แล้วเทียบกับที่ขอ ถ้าไม่ตรงและในเครื่องไม่มี ffmpeg/ImageMagick ให้ crop มันจะ**บอกตรงๆ ว่าได้ขนาดเท่าไหร่จริง** ไม่ใช่รายงานขนาดที่ขอไป และทุกไฟล์ที่สร้างจะถูกระบุในรายงานว่า **เป็นภาพที่ AI สร้าง** เสมอ
+
+*It measures the real pixel size from the file header instead of trusting the request, and always labels the output as AI-generated. Exit code is the verdict: 0 matched · 1 written but wrong size · 2 provider unavailable · 3 nothing produced.*
+
+เปิด/ปิดได้ที่ `image.provider` (`agy` หรือ `none`) ใน `/crew-config` · ใช้โควตาบัญชี Google เดียวกับ Gemini/Antigravity · **ไม่สร้าง**รูปคนจริง โลโก้ เครื่องหมายการค้า ตัวละครมีลิขสิทธิ์ หรืออะไรที่ทำให้เข้าใจผิดว่าเป็นภาพถ่ายจริง
 
 ---
 

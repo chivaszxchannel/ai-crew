@@ -39,7 +39,7 @@ The VS Code extension does not accept `/plugin` in its chat box — run the two 
 
 **Then, once per machine:** `/crew-setup` — checks Node, installs and signs in the CLI reviewers you configured (Codex: `npm i -g @openai/codex` + `codex login`; Gemini: `npm i -g @google/gemini-cli`), verifies the agents, and dry-runs the review chain.
 
-**Then, once per project:** `/crew-config` — a click-through wizard that writes `.crew/config.json` (models, mode, reviewers, rounds, language, git policy) and `.crew/rules.md` from a stack template (PHP on shared hosting, Next.js + Supabase, Node/Python, generic).
+**Then, once per project:** `/crew-config` — a click-through wizard (or `/crew-config ui` for a settings page in your browser) that writes `.crew/config.json` (models, mode, reviewers, rounds, language, git policy) and `.crew/rules.md` from a stack template (PHP on shared hosting, Next.js + Supabase, Node/Python, generic).
 
 ## Use
 
@@ -49,7 +49,49 @@ The VS Code extension does not accept `/plugin` in its chat box — run the two 
 | `/crew <task>` | force the crew. Flags: `--eco` `--normal` `--strict` `--rounds N` `--lang th` `--no-auto` |
 | `/crew-resume` or "continue" | pick up an in-progress job after a new session or `/model` switch |
 | `/crew-config` | change models / mode / reviewers / rules by clicking; `--global` for all projects; `show` to print |
+| `/crew-config ui` | open a local settings page in your browser: dropdowns per role, reviewer status, one-click install / sign-in, rules template |
 | `/crew-setup` | install and verify reviewer CLIs, dry-run |
+| `/crew-image <description>` | generate a picture asset (hero, og:image, icon) with the Antigravity CLI, then measure its real size |
+
+## Visual settings page
+
+```
+/crew-config ui
+```
+
+Opens a local page in your browser — no JSON editing, nothing to install (single Node file, zero npm dependencies).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../docs/config-ui-dark.png">
+    <img alt="ai-crew settings page: model dropdowns per role, mode presets, reviewer status, project rules" src="../docs/config-ui-light.png" width="760">
+  </picture>
+</p>
+
+- **Scope** — write to this project (`.crew/config.json`) or to your machine default (`~/.claude/ai-crew.json`)
+- **Mode cards** — `eco` / `normal` / `strict`; picking one rewrites the model dropdowns below, which you can still adjust
+- **Model dropdowns** — three slots per role, forming the fallback chain (`fable → opus → inherit`) for lead, coder, tester, scout and writer
+- **Reviewers** — checkbox + up/down ordering, each row showing live status (ready / not signed in / not installed) with **Install** and **Login** buttons
+- **Options** — review rounds, reply language, auto-mode threshold, git policy
+- **Rules** — pick a stack template (auto-detected) and it writes `.crew/rules.md`
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../docs/reviewers-dark.png">
+    <img alt="Reviewer rows showing ready / not signed in / not installed with Install and Login buttons" src="../docs/reviewers-light.png" width="760">
+  </picture>
+</p>
+
+**Login button:** it opens a real terminal window running that vendor's own login command (`codex login`, `gemini`, `agy`). The vendor's CLI handles the browser sign-in; come back and press *Re-check status*. The page never asks for, sees, or stores a token.
+
+**Security:** binds `127.0.0.1` only, requires a one-time random token in the URL, rejects cross-origin requests, and exits after 30 minutes idle. Existing files are backed up (`.bak_YYYYMMDD`) before being replaced. Saved settings apply to the next `/crew` run — no restart needed.
+
+Run it directly if you prefer:
+
+```bash
+node "<plugin-root>/tools/config-ui.mjs" --project .
+node "<plugin-root>/tools/config-ui.mjs" --no-open --port 8790
+```
 
 ## Configuration
 
@@ -84,6 +126,21 @@ Each model entry is a fallback chain: on error, rate limit or "unavailable" the 
 **Reviewers:** `codex`, `gemini` and `antigravity` (the `agy` CLI) run read-only against `.crew/review-request.md` and are parsed for a `VERDICT: PASS|FAIL` line. `opus` / `sonnet` / `fable` run the built-in `reviewer-fallback` agent. The first available one is used; the report always states which reviewer ran and why others were skipped (`not found` / `not signed in` / `rate-limited`).
 
 Full key reference: `skills/crew/references/config-schema.md`.
+
+## Image generation (optional)
+
+Some projects need a picture that does not exist yet. With the **Antigravity CLI (`agy`)** installed, `/crew-image` produces one — and the crew can produce one itself when a plan calls for an asset.
+
+```
+/crew-image a calm freshwater fishing pond at golden hour, low angle across the water,
+            reeds in the foreground, warm side light, photographic, no people, no text
+```
+
+What makes it different from just asking a model for a picture: the tool **measures the real pixel size from the file header** and compares it with what was requested. The provider defaults to a 1024×1024 square and honours aspect-ratio wording inconsistently, so a mismatch is common — when it happens and neither `ffmpeg` nor `magick` is available to crop, the tool **reports the size it actually got** rather than the size you asked for. Exit code is the verdict: `0` matched · `1` written but wrong size · `2` provider missing / not signed in / rate-limited · `3` nothing produced.
+
+Every generated file is labelled AI-generated in the reply and in the report's changed-files list, and the prompt is recorded in `state.md` so it can be regenerated. It will not generate real identifiable people, logos, trademarks, copyrighted characters, or anything meant to pass as a real photograph or record.
+
+Turn it on or off with `image.provider` (`agy` | `none`) in `/crew-config`. It shares the Google account quota with the Gemini/Antigravity reviewer, so heavy image use can rate-limit reviews — the crew falls back to the agent reviewer and says so.
 
 ## What it never does
 

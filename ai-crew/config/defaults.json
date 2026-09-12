@@ -45,5 +45,12 @@
     "manual": true,
     "list_changed_files": true
   },
-  "$comment_reviewers": "CLI reviewers: codex, gemini, antigravity (agy). Agent reviewers: opus, sonnet, fable. The chain is tried in order; the first one that runs wins."
+  "$comment_reviewers": "CLI reviewers: codex, gemini, antigravity (agy). Agent reviewers: opus, sonnet, fable. The chain is tried in order; the first one that runs wins.",
+  "image": {
+    "provider": "agy",
+    "out_dir": "assets/generated",
+    "default_size": "1536x640",
+    "disclose": true
+  },
+  "$comment_image": "Optional image generation. provider: agy (Antigravity CLI) or none. Used by /crew-image and by the crew when a task needs a picture asset."
 }

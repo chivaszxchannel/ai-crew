@@ -47,6 +47,10 @@ out.mode=mode; console.log(JSON.stringify(out,null,2));
 | `git.add_state_dir_to_gitignore` | bool | Add `state_dir/` to `.gitignore` once. |
 | `deploy.manual` | bool | User deploys by hand → the report must list every changed file with full path and the crew must never upload. |
 | `deploy.list_changed_files` | bool | Always end the report with the changed-file list. |
+| `image.provider` | `"agy"` \| `"none"` | Which local CLI generates picture assets. `agy` = Antigravity CLI's built-in image tool. `none` disables `/crew-image` and any image subtask. |
+| `image.out_dir` | path | Where generated images are written, relative to the project. Default `assets/generated`. |
+| `image.default_size` | `"<W>x<H>"` | Size used when the task does not imply one. |
+| `image.disclose` | bool | Always label generated images as AI-generated in replies and in the report. Keep this true. |
 
 ## Reviewer availability and exit codes (scripts/review.*)
 
