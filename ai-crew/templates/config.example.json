@@ -1,0 +1,15 @@
+{
+  "language": "th",
+  "mode": "normal",
+  "models": {
+    "lead":   ["fable", "opus", "inherit"],
+    "coder":  ["sonnet", "haiku"],
+    "tester": ["sonnet", "haiku"],
+    "scout":  ["haiku", "sonnet"],
+    "writer": ["haiku", "sonnet"]
+  },
+  "reviewers": ["codex", "gemini", "opus"],
+  "max_rounds": 3,
+  "auto_mode": true,
+  "rules_file": ".crew/rules.md"
+}

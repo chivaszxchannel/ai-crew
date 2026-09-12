@@ -1,0 +1,17 @@
+{
+  "name": "bm-plugins",
+  "owner": {
+    "name": "BM"
+  },
+  "metadata": {
+    "description": "BM's plugin marketplace: ai-crew (multi-model crew with Codex/Gemini review)"
+  },
+  "plugins": [
+    {
+      "name": "ai-crew",
+      "source": "./ai-crew",
+      "description": "Multi-model engineering crew for Claude Code: a lead model plans and splits the work, cheaper worker models build and test, an independent CLI reviewer (Codex / Gemini / Antigravity) checks it, the loop repeats until it passes, and you get a short per-model report in your language. Configurable models, modes (eco/normal/strict), reviewer chain and per-project rules.",
+      "version": "0.2.1"
+    }
+  ]
+}

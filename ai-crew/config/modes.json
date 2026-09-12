@@ -1,0 +1,39 @@
+{
+  "$comment": "Presets. A mode overrides the keys it lists; everything else comes from defaults/user/project config. Select with mode in config or /crew --eco | --normal | --strict",
+  "eco": {
+    "description": "Cheapest. Lead thinks on Sonnet, workers on Haiku, one review round. Use when quota is nearly gone or the task is small.",
+    "models": {
+      "lead":   ["sonnet", "opus", "inherit"],
+      "coder":  ["haiku", "sonnet"],
+      "tester": ["haiku", "sonnet"],
+      "scout":  ["haiku"],
+      "writer": ["haiku"]
+    },
+    "max_rounds": 1,
+    "double_review": false
+  },
+  "normal": {
+    "description": "Balanced default. Lead on the strongest model, coding on Sonnet, reading/writing on Haiku, up to 3 review rounds.",
+    "models": {
+      "lead":   ["fable", "opus", "inherit"],
+      "coder":  ["sonnet", "haiku"],
+      "tester": ["sonnet", "haiku"],
+      "scout":  ["haiku", "sonnet"],
+      "writer": ["haiku", "sonnet"]
+    },
+    "max_rounds": 3,
+    "double_review": false
+  },
+  "strict": {
+    "description": "Highest assurance. Strongest models everywhere that matters, two independent reviewers must both pass, up to 4 rounds. Use for auth, payments, data migrations.",
+    "models": {
+      "lead":   ["fable", "opus", "inherit"],
+      "coder":  ["opus", "sonnet"],
+      "tester": ["sonnet", "opus"],
+      "scout":  ["sonnet", "haiku"],
+      "writer": ["haiku", "sonnet"]
+    },
+    "max_rounds": 4,
+    "double_review": true
+  }
+}

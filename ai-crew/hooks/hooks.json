@@ -1,0 +1,16 @@
+{
+  "description": "ai-crew auto mode: reminds the session to run the crew workflow for real coding tasks without the user typing /crew. Honoured only when auto_mode is true in config.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[ai-crew auto] This message may be a coding task. Apply the Auto mode rules of the ai-crew:crew skill: if auto_mode is on in the merged config and the message asks for code to be written, changed, fixed, migrated or reviewed - any work that will touch project files - start the crew workflow now as if the user typed /crew and say in one line that the crew has the task. If the state file is in-progress and the message says continue, use ai-crew:crew-resume. Questions, explanations, opinions, or a one-spot edit where the user named the file and line are answered directly. The words no crew or do it yourself, in any language, skip the crew for this message.\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

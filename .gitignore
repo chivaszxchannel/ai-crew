@@ -1,0 +1,9 @@
+.crew/
+node_modules/
+*.bak_*
+.DS_Store
+Thumbs.db
+
+# เอกสารภายในของผู้พัฒนา ไม่ต้องขึ้น repo สาธารณะ
+PUSH-TO-GITHUB.md
+CHANGES-*.md

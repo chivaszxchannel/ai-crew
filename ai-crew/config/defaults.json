@@ -1,0 +1,49 @@
+{
+  "$comment": "ai-crew defaults. Override per user in ~/.claude/ai-crew.json and per project in .crew/config.json (project wins). Run /crew-config to generate these interactively.",
+  "language": "auto",
+  "mode": "normal",
+  "models": {
+    "lead": [
+      "fable",
+      "opus",
+      "inherit"
+    ],
+    "coder": [
+      "sonnet",
+      "haiku"
+    ],
+    "tester": [
+      "sonnet",
+      "haiku"
+    ],
+    "scout": [
+      "haiku",
+      "sonnet"
+    ],
+    "writer": [
+      "haiku",
+      "sonnet"
+    ]
+  },
+  "reviewers": [
+    "codex",
+    "gemini",
+    "opus"
+  ],
+  "max_rounds": 3,
+  "double_review": false,
+  "auto_mode": true,
+  "auto_mode_min_files": 1,
+  "rules_file": ".crew/rules.md",
+  "state_dir": ".crew",
+  "backup_suffix": ".bak_YYYYMMDD",
+  "git": {
+    "commit": "never",
+    "add_state_dir_to_gitignore": true
+  },
+  "deploy": {
+    "manual": true,
+    "list_changed_files": true
+  },
+  "$comment_reviewers": "CLI reviewers: codex, gemini, antigravity (agy). Agent reviewers: opus, sonnet, fable. The chain is tried in order; the first one that runs wins."
+}
