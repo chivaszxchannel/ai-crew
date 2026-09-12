@@ -72,6 +72,19 @@ function imageSize(file) {
 
 const which = (bin) => { const r = spawnSync(process.platform === 'win32' ? 'where' : 'which', [bin], { encoding: 'utf8', windowsHide: true }); return r.status === 0; };
 
+// Resolve the real executable path so we can spawn WITHOUT a shell. On Windows a bare name like
+// "agy" is only found when shell:true — but shell:true joins the arguments into one command line
+// WITHOUT quoting, so the multi-line instructions string breaks into many words and the CLI rejects
+// the stray ones ("unexpected argument \"your\""). Resolving to the full agy.exe path lets us pass
+// the args as a real array with shell:false, and Node quotes each element correctly.
+const resolveBin = (bin) => {
+  if (process.platform !== 'win32') return bin;
+  const r = spawnSync('where', [bin], { encoding: 'utf8', windowsHide: true });
+  if (r.status !== 0 || !r.stdout) return bin;
+  const found = r.stdout.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  return found.find((f) => /\.exe$/i.test(f)) || found[0];   // prefer a real .exe (spawnable without a shell)
+};
+
 const PROVIDERS = {
   agy: {
     bin: 'agy',
@@ -114,13 +127,17 @@ const instructions = [
 ].filter(Boolean).join('\n\n');
 
 const args = p.build(instructions);
+const exe = resolveBin(p.bin);
 const started = Date.now();
-const r = spawnSync(p.bin, args, {
+const r = spawnSync(exe, args, {
   encoding: 'utf8',
   stdio: ['ignore', 'pipe', 'pipe'],          // stdin closed on purpose — see header note
   env: { ...process.env, AI_CREW_IMAGE_DEPTH: '1' },
   windowsHide: true,
-  shell: process.platform === 'win32',
+  // No shell: the instructions argument spans several lines and words. shell:true on Windows would
+  // split it into separate arguments (the CLI then errors "unexpected argument"). Spawning the
+  // resolved .exe directly makes Node pass each arg as one argv element, quoted correctly.
+  shell: false,
 });
 const log = `${r.stdout || ''}\n${r.stderr || ''}`.trim();
 const lower = log.toLowerCase();

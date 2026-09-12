@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.4
+- **`gen-image.mjs` no longer breaks the provider command on Windows.** It spawned the image CLI with `shell:true`, which joins the arguments into one command line without quoting — so the multi-line instructions string was split into separate words and the CLI rejected them (`unexpected argument "your"`). It now resolves the real executable path and spawns it directly with `shell:false`, so each argument is passed and quoted correctly. Verified end-to-end against Antigravity CLI (`agy`) 1.2.2 on Windows.
+- **Known limitation, documented honestly:** with the quoting fixed, `agy`'s built-in `generate_image` tool still cannot save to a chosen file path or an exact pixel size — it writes a `.jpg` into its own conversation artifact storage and accepts only aspect-ratio presets. So image generation via `agy` does not yet return a usable file at the requested path. The feature stays **off by default** (`image.provider: "none"`); `/crew-image` and `crew/SKILL.md` note this so no one turns it on expecting a saved file.
+
 ## 0.4.3
 - **Thai descriptions on the mode cards.** The eco / normal / strict cards in the settings page now show a Thai explanation as the main line with the English one beneath it, matching the role rows. Each mode carries a `description_th` field in `config/modes.json`; it is display-only and never written into a saved config.
 

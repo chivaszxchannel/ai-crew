@@ -68,6 +68,10 @@ The lead may assign an image subtask when the plan needs an asset that does not 
 - If exit is 1 or 2, that subtask is **not** `done`. Report it as an open item; never let the page ship with a wrong-size or missing asset silently.
 - Generating an image is never a reason to skip the review round for the code that uses it.
 
+## Antigravity (`agy`) does not save to a path yet — check before relying on this
+
+Verified against Antigravity CLI 1.2.2 (Windows): `agy`'s built-in `generate_image` tool **cannot write to a chosen output path and does not take an exact pixel size** — it saves a `.jpg` into its own conversation artifact storage and accepts only aspect-ratio presets (1:1, 3:2, 16:9, …). So a call that asks it to save to `--out` at `--width/--height` generates an image but leaves nothing at the requested path, and `gen-image.mjs` correctly reports exit 3 / "no file produced". Until this is redesigned (let `agy` save to its store, then locate and copy the newest artifact out, and map size → nearest ratio), treat `agy` image generation as **not producing a usable file**. This is why `image.provider` defaults to `none`. Do not tell the user an image was saved unless the tool returned exit 0 **and** you confirmed the file exists at the path.
+
 ## Known limits (say these rather than discovering them silently)
 
 - The provider defaults to a 1024x1024 square and honours aspect-ratio wording inconsistently, which is why `--width/--height` are passed explicitly and the result is measured.
