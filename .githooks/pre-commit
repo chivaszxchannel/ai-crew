@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# pre-commit — refuse to commit anything that looks personal, local, or secret.
+# Enable once per clone:  git config core.hooksPath .githooks
+# Personal patterns live in .secrets-patterns (gitignored, one regex per line, # = comment).
+# Bypass only when you are certain:  git commit --no-verify
+set -u
+FAIL=0
+say() { printf '[pre-commit] %s\n' "$*" >&2; }
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+# ---------- 1. filenames that must never be published ----------
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  case "$f" in
+    .crew/*|*/.crew/*)                 say "BLOCK  $f  — crew state (contains real project paths)"; FAIL=1 ;;
+    *.bak_*|*.bak)                     say "BLOCK  $f  — backup file"; FAIL=1 ;;
+    TASK-*.md|*.local.md|PUSH-TO-GITHUB.md|CHANGES-*.md)
+                                       say "BLOCK  $f  — local-only note"; FAIL=1 ;;
+    .env|*/.env|.env.*|*/.env.*)       say "BLOCK  $f  — environment file"; FAIL=1 ;;
+    *.pem|*.key|*.p12|*.pfx|id_rsa*|*.ppk)
+                                       say "BLOCK  $f  — key material"; FAIL=1 ;;
+    .secrets-patterns|.secrets-allow)  say "BLOCK  $f  — this file lists your private strings"; FAIL=1 ;;
+    *db_config.php|*config.local.*)    say "BLOCK  $f  — credential config"; FAIL=1 ;;
+  esac
+done <<EOF
+$STAGED
+EOF
+
+# ---------- 2. high-confidence secret patterns (always on) ----------
+BUILTIN='-----BEGIN [A-Z ]*PRIVATE KEY|sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|xox[baprs]-[A-Za-z0-9-]{10,}|C:\\Users\\[A-Za-z0-9._-]+|/home/[a-z][a-z0-9._-]*/|mysql://|postgres://'
+
+# ---------- 3. your own private strings ----------
+USER_PAT=""
+if [ -f .secrets-patterns ]; then
+  USER_PAT=$(grep -v '^[[:space:]]*#' .secrets-patterns | grep -v '^[[:space:]]*$' | paste -sd'|' -)
+else
+  say "NOTE   .secrets-patterns not found — only the built-in checks ran."
+fi
+
+PATTERN="$BUILTIN"
+[ -n "$USER_PAT" ] && PATTERN="$BUILTIN|$USER_PAT"
+
+ALLOW=""
+[ -f .secrets-allow ] && ALLOW=$(grep -v '^[[:space:]]*#' .secrets-allow | grep -v '^[[:space:]]*$' | paste -sd'|' -)
+
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  [ -f "$f" ] || continue
+  # only scan text files
+  if file --mime "$f" 2>/dev/null | grep -q 'charset=binary'; then continue; fi
+  HITS=$(git show ":$f" 2>/dev/null | grep -nEi -e "$PATTERN" || true)
+  if [ -n "$ALLOW" ] && [ -n "$HITS" ]; then
+    HITS=$(printf '%s\n' "$HITS" | grep -vEi -e "$ALLOW" || true)
+  fi
+  if [ -n "$HITS" ]; then
+    say "BLOCK  $f  — matched a private/secret pattern:"
+    printf '%s\n' "$HITS" | head -5 | sed 's/^/           /' >&2
+    FAIL=1
+  fi
+done <<EOF
+$STAGED
+EOF
+
+if [ "$FAIL" -ne 0 ]; then
+  say ""
+  say "Commit refused. Remove the file or the text, or add a safe form to .secrets-allow."
+  say "If this is definitely a false positive:  git commit --no-verify"
+  exit 1
+fi
+exit 0

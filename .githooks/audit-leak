@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# audit-leak — scan EVERYTHING git already tracks (not just what is staged).
+# Run any time:  bash .githooks/audit-leak
+# Use it before making a repo public, and after anyone else edits the tree.
+set -u
+say() { printf '%s\n' "$*"; }
+
+BUILTIN='-----BEGIN [A-Z ]*PRIVATE KEY|sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|xox[baprs]-[A-Za-z0-9-]{10,}|C:\\Users\\[A-Za-z0-9._-]+|/home/[a-z][a-z0-9._-]*/|mysql://|postgres://'
+USER_PAT=""
+if [ -f .secrets-patterns ]; then
+  USER_PAT=$(grep -v '^[[:space:]]*#' .secrets-patterns | grep -v '^[[:space:]]*$' | paste -sd'|' -)
+else
+  say "NOTE: .secrets-patterns not found — built-in checks only."
+fi
+PATTERN="$BUILTIN"; [ -n "$USER_PAT" ] && PATTERN="$BUILTIN|$USER_PAT"
+ALLOW=""; [ -f .secrets-allow ] && ALLOW=$(grep -v '^[[:space:]]*#' .secrets-allow | grep -v '^[[:space:]]*$' | paste -sd'|' -)
+
+say "=== tracked files scan ==="
+FOUND=0
+while IFS= read -r f; do
+  [ -f "$f" ] || continue
+  file --mime "$f" 2>/dev/null | grep -q 'charset=binary' && continue
+  HITS=$(grep -nEi -e "$PATTERN" -- "$f" || true)
+  [ -n "$ALLOW" ] && [ -n "$HITS" ] && HITS=$(printf '%s\n' "$HITS" | grep -vEi -e "$ALLOW" || true)
+  if [ -n "$HITS" ]; then
+    say ""; say "--- $f"; printf '%s\n' "$HITS" | head -10 | sed 's/^/    /'
+    FOUND=1
+  fi
+done < <(git ls-files)
+
+say ""
+say "=== history scan (all commits, all branches) ==="
+if [ -n "$USER_PAT" ]; then
+  H=$(git log --all -p -G "$USER_PAT" --oneline 2>/dev/null | head -20 || true)
+  if [ -n "$H" ]; then say "commits whose diff touched one of your private patterns:"; printf '%s\n' "$H" | sed 's/^/    /'; FOUND=1
+  else say "clean"; fi
+else
+  say "skipped (no .secrets-patterns)"
+fi
+
+say ""
+if [ "$FOUND" -eq 0 ]; then say "RESULT: clean"; exit 0; fi
+say "RESULT: found something above. Fix the working tree, and for history use git filter-repo or recreate the repo."
+exit 1

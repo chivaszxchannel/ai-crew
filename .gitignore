@@ -9,3 +9,6 @@ PUSH-TO-GITHUB.md
 CHANGES-*.md
 TASK-setup-both.md
 *.local.md
+.secrets-patterns
+.secrets-allow
+TASK-*.md
