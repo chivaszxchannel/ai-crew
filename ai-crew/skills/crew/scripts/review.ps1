@@ -1,15 +1,15 @@
-# review.ps1 — run an independent CLI reviewer (read-only) over .crew/review-request.md and record the verdict.
+# review.ps1 - run an independent CLI reviewer (read-only) over .crew/review-request.md and record the verdict.
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File review.ps1 -Round 1 -Reviewers codex,gemini [-Model <name>] [-TimeoutSec 900] [-StateDir .crew]
 # -Reviewers takes ONE comma-separated string ("codex,gemini"), never a PowerShell array. Always invoke with -File, not -Command.
-# Antigravity (agy) is NOT a reviewer here — it is the optional image provider (tools/gen-image.mjs).
+# Antigravity (agy) is NOT a reviewer here - it is the optional image provider (tools/gen-image.mjs).
 # Tries each CLI reviewer in order. Exit codes:
 #   0 = VERDICT: PASS          1 = VERDICT: FAIL (or no verdict line)
 #   2 = (single reviewer) unavailable   3 = no CLI reviewer in the chain was available -> use the reviewer-fallback agent
 # The first line of output always says which reviewer produced the verdict, or why none could:
 #   REVIEWER_USED: codex | REVIEWER_NOT_FOUND | REVIEWER_NOT_LOGGED_IN | REVIEWER_RATE_LIMITED | REVIEWER_ERROR | NO_CLI_REVIEWER
 param(
-    # ONE comma-separated string, not [string[]] — see note below. CLI reviewers only: codex, gemini
+    # ONE comma-separated string, not [string[]] - see note below. CLI reviewers only: codex, gemini
     [string]$Reviewers = "codex,gemini",
     [int]$Round = 1,
     [string]$Model = "",
@@ -20,11 +20,13 @@ param(
 # every argument arrives as a literal string, so a [string[]] parameter binds ONE element
 # "codex,gemini" (comma-splitting is a PowerShell *expression* feature, not string coercion).
 # That element matches no known reviewer, so every reviewer was skipped silently while the
-# failure line still read "none of [codex, gemini]" — a -join on a 1-element array reproduces
+# failure line still read "none of [codex, gemini]" - a -join on a 1-element array reproduces
 # the original text. `-Command` binds the array correctly but loses the script's exit code
 # (3 became 1), which breaks the skill's branching. Splitting here makes -File correct on both.
 $ErrorActionPreference = "Continue"
 $ReviewerList = @($Reviewers -split ',' | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ })
+# An empty -Reviewers means "not specified", not "no reviewers" - same as review.sh's ${2:-codex,gemini}.
+if ($ReviewerList.Count -eq 0) { $ReviewerList = @("codex", "gemini") }
 $crewDir = Join-Path (Get-Location) $StateDir
 $request = Join-Path $crewDir "review-request.md"
 if (-not (Test-Path $crewDir)) { New-Item -ItemType Directory -Force $crewDir | Out-Null }
@@ -72,17 +74,31 @@ function Run-Reviewer([string]$name) {
 
     $errText = ""; if (Test-Path $err) { $errText = Get-Content $err -Raw -ErrorAction SilentlyContinue }
     $logText = ""; if (Test-Path $log) { $logText = Get-Content $log -Raw -ErrorAction SilentlyContinue }
-    $all = $errText + "`n" + $logText
-    if ($all -match "(?i)not logged in|login required|unauthorized|401|please sign in|authentication") { return @{ code = 2; reason = "REVIEWER_NOT_LOGGED_IN: $name" } }
-    if ($all -match "(?i)rate limit|usage limit|limit reached|quota|too many requests|429|insufficient_quota|plan limit|resource_exhausted") { return @{ code = 2; reason = "REVIEWER_RATE_LIMITED: $name" } }
 
     # gemini prints to stdout; codex writes the file. Normalise: make sure $output exists.
     if ($name -ne "codex" -and -not (Test-Path $output) -and $logText) { Set-Content -Path $output -Value $logText -Encoding UTF8 }
-    if (-not (Test-Path $output)) { return @{ code = 2; reason = "REVIEWER_ERROR: $name produced no output (exit $($proc.ExitCode), see $log / $err)" } }
+    $content = ""; if (Test-Path $output) { $content = Get-Content $output -Raw -ErrorAction SilentlyContinue }
 
-    $content = Get-Content $output -Raw
+    # A real VERDICT line is proof the reviewer ran and answered. Trust it BEFORE scanning the log
+    # for trouble words: the log holds the reviewer's whole transcript, which routinely quotes the
+    # diff under review - and a diff that touches rate-limiting or quota code contains "rate limit"
+    # and "quota" itself. Scanning first threw away good reviews as REVIEWER_RATE_LIMITED.
     if ($content -match "(?m)^\s*VERDICT:\s*PASS") { return @{ code = 0; reason = "REVIEWER_USED: $name"; file = $output; text = $content } }
-    return @{ code = 1; reason = "REVIEWER_USED: $name"; file = $output; text = $content }
+    if ($content -match "(?m)^\s*VERDICT:\s*FAIL") { return @{ code = 1; reason = "REVIEWER_USED: $name"; file = $output; text = $content } }
+
+    # No verdict, so classify from the log. Scan stderr always, but stdout ONLY when the reviewer
+    # produced nothing usable: stdout is the transcript, and a reviewer that answered at all has
+    # already quoted the diff into it. A reviewer that truly failed writes its error to stderr, or
+    # leaves stdout as the only thing there is.
+    $all = $errText
+    if ([string]::IsNullOrWhiteSpace($content)) { $all += "`n" + $logText }
+    if ($all -match "(?i)not logged in|login required|unauthorized|401|please sign in|authentication") { return @{ code = 2; reason = "REVIEWER_NOT_LOGGED_IN: $name" } }
+    if ($all -match "(?i)rate limit|usage limit|limit reached|quota|too many requests|429|insufficient_quota|plan limit|resource_exhausted") { return @{ code = 2; reason = "REVIEWER_RATE_LIMITED: $name" } }
+    if ([string]::IsNullOrWhiteSpace($content)) { return @{ code = 2; reason = "REVIEWER_ERROR: $name produced no output (exit $($proc.ExitCode), see $log / $err)" } }
+
+    # Output exists but carries no verdict line and no recognisable error: treat as FAIL and show it,
+    # so the lead reads what actually came back instead of a guess about why.
+    return @{ code = 1; reason = "REVIEWER_USED: $name (no VERDICT line - output shown verbatim)"; file = $output; text = $content }
 }
 
 $tried = @()
