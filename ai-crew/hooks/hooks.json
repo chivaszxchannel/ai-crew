@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[ai-crew auto] This message may be a coding task. Apply the Auto mode rules of the ai-crew:crew skill: if auto_mode is on in the merged config and the message asks for code to be written, changed, fixed, migrated or reviewed - any work that will touch project files - start the crew workflow now as if the user typed /crew and say in one line that the crew has the task. If the state file is in-progress and the message says continue, use ai-crew:crew-resume. Questions, explanations, opinions, or a one-spot edit where the user named the file and line are answered directly. The words no crew or do it yourself, in any language, skip the crew for this message.\"",
+            "command": "echo \"[ai-crew auto] If auto_mode is on and this message asks to write/change/fix/migrate/review code that will touch project files, run the ai-crew:crew skill now (its Auto mode section decides depth and wording). continue + in-progress state = ai-crew:crew-resume. Questions, opinions, or a one-spot edit at a named file:line are answered directly. no crew / ไม่ต้องใช้ทีม / do it yourself = skip the crew.\"",
             "timeout": 5
           }
         ]

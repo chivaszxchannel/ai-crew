@@ -45,6 +45,21 @@ The model running the session is the **chair**: it drives the loop and calls age
 - When code disagrees with docs, notes or memory, the code wins; fix the notes.
 - Unknown = say unknown and go look (open the file, grep, run it). Never fill a gap with a plausible answer.
 
+## Ponytail — the smallest solution that works (all coding roles)
+
+Before writing or changing code, climb the ladder from easy to hard and **stop at the lowest rung that fully solves the task**; never build higher "for the future":
+1. **Does it need to exist at all?** (YAGNI) — removing or adjusting beats adding.
+2. **Is it already in this codebase?** — reuse an existing function / module before writing anything new.
+3. **Does the stdlib / language built-in provide it?** — before anything external.
+4. **Is it a native platform feature?** — an HTML attribute, a browser or PHP API — before a library.
+5. **Is it already an installed dependency?** — never add a new one unless there is genuinely no other way.
+6. **Can it be one line?** — before many.
+7. **Only then: the minimum viable solution** — the least code, fewest files, smallest diff that meets the acceptance criterion.
+
+Always ask "what is the simpler way, and why can't it be used?" before reaching for the complex one. No speculative abstraction, no refactor beyond the subtask (see the Kitchen-Sink / Runaway-Refactor failure modes). Minimal code is also fewer tokens for every model in the chain — cheaper and clearer at the same time.
+
+> This ladder follows the **Ponytail** methodology by Dietrich Gebert (github.com/DietrichGebert/ponytail). It is the core idea, not his full ruleset — for the maintained, benchmarked version across all of your coding (not just the crew), install the Ponytail plugin: `claude plugin marketplace add DietrichGebert/ponytail` then `claude plugin install ponytail@ponytail`.
+
 ## Safety rules (all roles)
 
 1. Never `git commit` / `push` / `reset`, never delete files, unless the user asks for it in the same message (`git.commit` in config can relax this to `ask` or `auto`).
@@ -70,15 +85,24 @@ The plugin hook appends an `[ai-crew auto]` reminder to every user message. When
 - Otherwise create `state_dir/` and `state.md` from `references/state-template.md` with the user's request verbatim, the merged config, and the rules file path. If `git.add_state_dir_to_gitignore` and `.gitignore` exists without `state_dir/`, append it (the one edit that needs no backup).
 - Update `state.md` at the end of every step, not at the end of the job. It is the team's memory.
 
-### 2. Scout (worker-scout)
-Send the scout for: files involved (full paths, role, function:line, callers), stack patterns (auth, DB access, response shapes, path style, line endings, BOM), constraints from `CLAUDE.md` / docs / `rules_file`, and anything it could not find. Read-only.
+### 1.5 Size the work (spend models only on what the task needs)
+A cheap first pass — the chair, or scout on the smallest model — rates the task, then the pipeline runs only as deep as it needs. **Quality gates stay; ceremony goes.**
+- **Small** (one file, a few lines, clear ask, no auth / money / DB risk): the chair or lead edits directly — no separate scout, no extra workers — then **one** review round.
+- **Medium** (a few files, clear scope): scout → one coder → tester → one review round.
+- **Large / risky** (auth, payments, migrations, data edits, wide refactor, or the user asked for strict): full crew, `strict` depth, `double_review`, up to `max_rounds`.
+
+Every code change still gets **at least one independent review** (Safety rule 5) — sizing never removes the review, only the parts the task does not need. A PASS ends the loop immediately, whatever rounds remain; only a FAIL spends another round. Small / Medium start at 1 round. Record the chosen size and the reason in `state.md`.
+
+### 2. Scout (worker-scout) — Medium / Large only
+Send the scout for: files involved (full paths, role, function:line, callers), stack patterns (auth, DB access, response shapes, path style, line endings, BOM), constraints from `CLAUDE.md` / docs / `rules_file`, and anything it could not find. Read-only. Its report is read by the expensive lead, so it returns **paths, `function:line`, and one line per item — never whole files or long quotes**. Later steps read `state.md`, not the files again, unless a file actually changed this round.
 
 ### 3. Plan (lead-brain, mode PLAN)
 Input: request verbatim + scout report + rules file. Output: 3–8 subtasks (files, owner role, checkable acceptance criterion, dependencies), risk areas for the reviewer, decisions the lead made instead of asking (safest reversible option, one-line reason), and questions only if truly blocked. Save to state and start; do not wait for approval unless blocked.
 
 ### 4. Build (workers)
 - Independent subtasks → several `Agent` calls in one message.
-- Each worker prompt is self-contained: subtask, files, patterns from the scout, the rules-for-workers block, and the reply format (`files changed (full path) / what was done in 1–3 lines / evidence / unsure`).
+- Each worker applies **Ponytail**: the smallest change that meets the acceptance criterion, nothing beyond the subtask.
+- Each worker prompt is self-contained but lean: subtask, files, only the patterns from the scout that this subtask needs, the rules-for-workers block, and the reply format (`files changed (full path) / what was done in 1–3 lines / evidence / unsure`). Do not paste whole files or the full scout report into a worker prompt — pass the slice it needs.
 - Worker fails (error, limit, output misses the criterion) → retry with the next model in its chain; if the chain is exhausted, the chair does it and notes "done by chair" in state.
 - After all subtasks: worker-tester runs the stack's syntax/type/test commands from `rules_file`, compares brace/paren/CRLF/BOM with backups, greps callers of changed signatures, and returns PASS/FAIL with raw output.
 
@@ -108,7 +132,8 @@ Write the report from `references/report-template.md` in the reply language: wha
 Role: <coder|tester|scout|writer>   Model: <from config>
 Subtask: <1–3 sentences>
 Files: <full paths>
-Patterns to follow: <from scout>
+Patterns to follow: <only the ones this subtask needs, from scout>
+Ponytail: smallest change that meets the criterion; no scope creep, no new dependency
 Rules for workers: <pasted from rules_file>
 Acceptance criterion: <checkable>
 Reply format: files changed (full path, backup path) / what was done (1–3 lines) / evidence (command + output or file:line) / unsure
